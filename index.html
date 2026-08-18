@@ -4,47 +4,184 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Class 5 Quiz Lab</title>
+  
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- FONTS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- PDF GENERATION LIBRARY -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- USER SELECTION / REGISTRATION MODAL -->
+  <div id="userModal" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="glowing-title">Welcome to Quiz Lab! 🚀</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Who is playing today?</p>
+      
+      <div id="userList" class="user-list">
+        <!-- Saved profiles populate here -->
+      </div>
+
+      <div class="divider"><span>OR ADD NEW PROFILE</span></div>
+
+      <div class="new-user-input">
+        <input type="text" id="newUsername" placeholder="Enter student name..." maxlength="15">
+        <button class="btn btn-primary" onclick="registerNewUser()">Start Learning</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARENT PDF REPORT MODAL -->
+  <div id="reportModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card pdf-modal-card">
+      <div class="modal-header">
+        <h3>📄 Parent Performance Report</h3>
+        <button class="close-btn" onclick="closeReportModal()">✕</button>
+      </div>
+      
+      <div class="report-controls">
+        <label for="reportTimeframe">Timeframe:</label>
+        <select id="reportTimeframe">
+          <option value="daily">Today (Daily Summary)</option>
+          <option value="weekly" selected>Last 7 Days (Weekly Summary)</option>
+          <option value="monthly">Last 30 Days (Monthly Summary)</option>
+        </select>
+        <button class="btn btn-primary" onclick="downloadPDFReport()">Download PDF</button>
+      </div>
+
+      <!-- PDF PRINTABLE CONTAINER -->
+      <div id="pdfPrintContainer">
+        <div class="pdf-header">
+          <div class="pdf-logo-box">
+            <img src="favicon.png" alt="Company Logo" class="pdf-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="pdf-logo-fallback" style="display:none;">C5</div>
+            <div>
+              <h2 class="pdf-title">Class 5 Quiz Lab</h2>
+              <p class="pdf-subtitle">Official Student Performance Report</p>
+            </div>
+          </div>
+          <div class="pdf-emblem-box">
+            <span>OFFICIAL REPORT</span>
+            <small id="pdfReportDate">Aug 18, 2026</small>
+          </div>
+        </div>
+
+        <hr class="pdf-divider">
+
+        <div class="pdf-student-info">
+          <div>
+            <strong>Student Name:</strong> <span id="pdfStudentName">--</span>
+          </div>
+          <div>
+            <strong>Current Rank:</strong> <span id="pdfStudentRank">--</span>
+          </div>
+          <div>
+            <strong>Student Level:</strong> <span id="pdfStudentLevel">--</span>
+          </div>
+        </div>
+
+        <div class="pdf-section-title">Executive Summary</div>
+        <div class="pdf-stats-grid">
+          <div class="pdf-stat-card">
+            <span class="label">Time Spent</span>
+            <span class="val" id="pdfTimeSpent">0m</span>
+          </div>
+          <div class="pdf-stat-card">
+            <span class="label">Questions Solved</span>
+            <span class="val" id="pdfQuestionsSolved">0</span>
+          </div>
+          <div class="pdf-stat-card">
+            <span class="label">Accuracy Rate</span>
+            <span class="val" id="pdfAccuracy">0%</span>
+          </div>
+          <div class="pdf-stat-card">
+            <span class="label">Total XP Earned</span>
+            <span class="val" id="pdfTotalXP">0 XP</span>
+          </div>
+        </div>
+
+        <div class="pdf-section-title">Subject Performance Breakdown</div>
+        <table class="pdf-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Time Spent</th>
+              <th>Solved</th>
+              <th>Accuracy</th>
+            </tr>
+          </thead>
+          <tbody id="pdfSubjectBreakdown">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+
+        <div class="pdf-section-title">Speed & Revision Telemetry</div>
+        <div class="pdf-telemetry-box">
+          <p>• <strong>Average Solve Speed:</strong> <span id="pdfAvgSpeed">0s</span> per question.</p>
+          <p>• <strong>Mistakes Vault Status:</strong> <span id="pdfMistakesCount">0 unresolved errors</span> recorded.</p>
+        </div>
+
+        <!-- FORMAL SIGNATURES & VERIFICATION -->
+        <div class="pdf-signature-section">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p><strong>Parent / Guardian Signature</strong></p>
+            <small>Date: ____________________</small>
+          </div>
+
+          <div class="pdf-stamp-badge">
+            VERIFIED<br>PROGRESS
+          </div>
+
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <p><strong>Director / Principal Signature</strong></p>
+            <small>Class 5 Quiz Lab Authority</small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- LEFT SIDEBAR -->
   <aside class="sidebar">
     <div>
       <div class="brand">
-        <div class="brand-icon">C5</div>
+        <img src="favicon.png" alt="Logo" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="brand-icon-fallback" style="display: none;">C5</div>
         <div class="brand-text">
           <h1>Class 5 Quiz Lab</h1>
-          <p>GitHub Edition</p>
+          <p>GitHub Edition v1.0</p>
         </div>
       </div>
 
       <div class="nav-section">
         <div class="nav-section-title">Learn</div>
-        <a href="#" class="nav-item active">
+        <a href="javascript:void(0)" class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
           <span>📊</span> Dashboard
         </a>
       </div>
 
       <div class="nav-section">
         <div class="nav-section-title">Practice</div>
-        <a href="#" class="nav-item">
+        <a href="javascript:void(0)" class="nav-item" id="nav-quiz" onclick="switchTab('quiz')">
           <span>📝</span> Practice Quiz
         </a>
-        <a href="#" class="nav-item">
+        <a href="javascript:void(0)" class="nav-item" id="nav-mistakes" onclick="switchTab('mistakes')">
           <span>⚠️</span> Mistakes Log
         </a>
-      </div>
-    </div>
-
-    <div class="user-profile">
-      <div class="user-avatar">VR</div>
-      <div class="user-info">
-        <h4>Vinay Ray</h4>
-        <p>Student Account</p>
+        <a href="javascript:void(0)" class="nav-item" id="nav-leaderboard" onclick="switchTab('leaderboard')">
+          <span>🏆</span> Leaderboard
+        </a>
       </div>
     </div>
   </aside>
@@ -55,68 +192,145 @@
     <!-- TOP HEADER -->
     <header class="top-bar">
       <div class="header-title">
-        <h2>Ready to learn, VINAY?</h2>
-        <p>Select your subject and chapter to start practicing.</p>
+        <h2 class="glowing-title" id="welcomeHeading">Ready to Learn? 🚀</h2>
+        <p>Pick your subject & chapter to unlock exciting challenges!</p>
       </div>
 
       <div class="stats-container">
-        <div class="stat-badge">
-          <span>📚 Questions:</span>
-          <span class="value" id="totalQuestionsCount">--</span>
-        </div>
-        <div class="stat-badge">
-          <div class="api-status">
-            <span class="api-status-dot"></span> API Live
-          </div>
-        </div>
+        <!-- LIVE DIGITAL CLOCK -->
+        <div class="stat-badge clock-badge" id="liveClock">00:00:00 AM</div>
+
+        <!-- PROFILE BADGE -->
+        <button class="user-badge-btn" onclick="openUserModal()">
+          <span>👤 Active:</span>
+          <strong id="activeUserName">Guest</strong>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" onclick="openReportModal()">📄 Parent Report</button>
       </div>
     </header>
 
-    <!-- SELECTION CONTROLS -->
-    <section class="controls-card">
-      <div class="input-group">
-        <label for="subjectSelect">Subject</label>
-        <select id="subjectSelect" onchange="onSubjectChange()">
-          <option value="">Loading subjects...</option>
-        </select>
-      </div>
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboardView" class="view-section active">
+      
+      <!-- USER GAMIFICATION STATS HEADER -->
+      <section class="user-stats-banner">
+        <div class="user-stat-card">
+          <span class="stat-label">Total Points</span>
+          <span class="stat-value" id="dashXP">0 XP</span>
+        </div>
+        <div class="user-stat-card">
+          <span class="stat-label">Rank & Level</span>
+          <span class="stat-value" id="dashLevel">Rookie</span>
+        </div>
+        <div class="user-stat-card">
+          <span class="stat-label">Active Streak</span>
+          <span class="stat-value" id="dashStreak">🔥 0</span>
+        </div>
+        <div class="user-stat-card">
+          <span class="stat-label">Accuracy Rate</span>
+          <span class="stat-value" id="dashAccuracy">0%</span>
+        </div>
+      </section>
 
-      <div class="input-group">
-        <label for="chapterSelect">Chapter</label>
-        <select id="chapterSelect">
-          <option value="ALL">All Chapters</option>
-        </select>
-      </div>
-
-      <button class="btn btn-primary" onclick="loadQuestions()">Start Practice</button>
-    </section>
-
-    <!-- QUIZ CONTAINER -->
-    <section class="quiz-card" id="quizContainer">
-      <div class="loader" id="loader">Fetching curriculum data...</div>
-
-      <div id="quizContent" style="display: none; height: 100%;">
-        <div>
-          <div class="quiz-header">
-            <div class="quiz-breadcrumb" id="quizBreadcrumb">EVS • Earth — Our Shared Home</div>
-            <div class="question-count" id="questionCounter">Question 1 of 50</div>
-          </div>
-
-          <div class="question-title" id="questionText">
-            Who was the first Indian to reach the International Space Station?
-          </div>
-
-          <div class="options-grid" id="optionsGrid">
-            <!-- Dynamic Options -->
-          </div>
+      <!-- SELECTION CONTROLS -->
+      <section class="controls-card">
+        <div class="input-group">
+          <label for="subjectSelect">Subject</label>
+          <select id="subjectSelect" onchange="onSubjectChange()">
+            <option value="">Unlocking subjects...</option>
+          </select>
         </div>
 
-        <div class="quiz-footer">
-          <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()" disabled>Previous</button>
-          <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+        <div class="input-group">
+          <label for="chapterSelect">Chapter</label>
+          <select id="chapterSelect">
+            <option value="ALL">All Chapters</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="loadQuestions()">Start Practice</button>
+      </section>
+
+      <!-- QUIZ CONTAINER -->
+      <section class="quiz-card" id="quizContainer">
+        <div class="loader-box" id="loader">
+          <div class="spinner"></div>
+          <p id="loaderText">Unlocking secret questions...</p>
+        </div>
+
+        <div id="quizContent" style="display: none; height: 100%;">
+          <div>
+            <div class="quiz-header">
+              <div class="quiz-breadcrumb" id="quizBreadcrumb">EVS • Earth — Our Shared Home</div>
+              <div class="quiz-header-right">
+                <div class="timer-badge">⏱️ <span id="questionTimer">0s</span></div>
+                <div class="question-count" id="questionCounter">Question 1 of 50</div>
+              </div>
+            </div>
+
+            <div class="question-title" id="questionText">
+              Question text goes here...
+            </div>
+
+            <div class="options-grid" id="optionsGrid">
+              <!-- Dynamic Options -->
+            </div>
+          </div>
+
+          <div class="quiz-footer">
+            <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()" disabled>Previous</button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PRACTICE QUIZ VIEW -->
+    <div id="quizView" class="view-section">
+      <div class="info-card">
+        <h3>⚡ Direct Practice Zone</h3>
+        <p>Use the Subject and Chapter selectors on the Dashboard to start your timed quiz challenge!</p>
+      </div>
+    </div>
+
+    <!-- MISTAKES LOG VIEW -->
+    <div id="mistakesView" class="view-section">
+      <div class="info-card">
+        <h3>⚠️ Mistakes Vault</h3>
+        <p>Review questions you answered incorrectly during practice sessions.</p>
+        <div id="mistakesList" class="mistakes-container">
+          <!-- Dynamic Mistakes -->
         </div>
       </div>
-    </section>
+    </div>
+
+    <!-- LEADERBOARD VIEW -->
+    <div id="leaderboardView" class="view-section">
+      <div class="info-card">
+        <h3>🏆 Class Standings (Anonymous)</h3>
+        <p>See how your XP & Accuracy match up against fellow scholars!</p>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Scholar</th>
+              <th>Total XP</th>
+              <th>Accuracy</th>
+              <th>Solved</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <!-- Dynamic Standings -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FOOTER SIGNATURE -->
+    <footer class="app-footer">
+      Made with ❤️ by Vinay Ray
+    </footer>
 
   </main>
 
