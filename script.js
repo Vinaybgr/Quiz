@@ -1,6 +1,7 @@
 // Replace with your exact deployed Google Apps Script Web App URL
 const API_URL = "https://script.google.com/macros/s/AKfycbz5dl4go_LxzW0wMSXdLhA6wkks1OJMHCNKYqbsY1cMwUT-4AwiQEF4k11MO3v_mj5y/exec"; 
 
+
 let menuData = {};
 let currentQuestions = [];
 let currentIndex = 0;
@@ -170,46 +171,29 @@ function updateDashboardStats() {
 }
 
 // 4. API INITIALIZATION & FETCHING
-// =========================================================================
-// 1. CONFIGURATION & FETCHING SNIPPET (REPLACE AT TOP OF script.js)
-// =========================================================================
-
-// Make sure your web app is deployed as "Execute as: Me" and "Who has access: Anyone"
-const API_URL = "https://script.google.com/macros/s/AKfycbwG4IBygCvhwV0I0A4B8bX3224S1I961T93-UfE5qP7k26dG_qX_S0X_g/exec"; 
-
 async function init() {
   startLiveClock();
   initUserProfile();
 
-  const loaderText = document.getElementById('loaderText');
-
   try {
+    const loaderText = document.getElementById('loaderText');
     if (loaderText) loaderText.innerText = getRandomLoadText();
 
-    // Added redirect follow mode to handle Google Apps Script 302 redirects properly
-    const response = await fetch(`${API_URL}?action=getMenu`, {
-      method: "GET",
-      redirect: "follow"
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
+    const response = await fetch(`${API_URL}?action=getMenu`);
     menuData = await response.json();
     
     populateSubjects();
     
+    // Automatically load initial batch if user is already set
     if (currentUser) {
       loadQuestions();
     }
   } catch (err) {
-    console.error("API Fetch Error Details:", err);
-    if (loaderText) {
-      loaderText.innerText = "❌ Connection error! Check deployment permissions or API URL.";
-    }
+    const loaderText = document.getElementById('loaderText');
+    if (loaderText) loaderText.innerText = "❌ Connection error! Check your API URL.";
   }
 }
+
 function populateSubjects() {
   const subjectSelect = document.getElementById('subjectSelect');
   subjectSelect.innerHTML = '';
@@ -251,13 +235,7 @@ async function loadQuestions() {
   document.getElementById('loaderText').innerText = getRandomLoadText();
 
   try {
-    const res = await fetch(`${API_URL}?action=getQuestions&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`, {
-      method: "GET",
-      redirect: "follow"
-    });
-    
-    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-
+    const res = await fetch(`${API_URL}?action=getQuestions&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`);
     currentQuestions = await res.json();
     currentIndex = 0;
     
@@ -265,10 +243,10 @@ async function loadQuestions() {
     document.getElementById('quizContent').style.display = 'block';
     renderQuestion();
   } catch (e) {
-    console.error("Question Fetch Error:", e);
-    document.getElementById('loaderText').innerText = "⚠️ Failed to fetch questions. Check network/URL.";
+    document.getElementById('loaderText').innerText = "⚠️ Failed to fetch questions.";
   }
 }
+
 // 5. QUESTION RENDERER & TIMER
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) {
