@@ -8,7 +8,7 @@
   <!-- FAVICON -->
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <!-- FONTS & STYLES -->
+  <!-- FONTS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -20,38 +20,26 @@
 </head>
 <body>
 
-  <!-- ========================================== -->
-  <!-- 1. USER PROFILE SELECTION / REGISTRATION MODAL -->
-  <!-- ========================================== -->
+  <!-- USER SELECTION / REGISTRATION MODAL -->
   <div id="userModal" class="modal-overlay">
     <div class="modal-card">
       <h2 class="glowing-title">Welcome to Quiz Lab! 🚀</h2>
       <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Who is playing today?</p>
       
-      <!-- Existing User Profiles Container -->
       <div id="userList" class="user-list">
-        <!-- Saved profiles populate dynamically via JavaScript -->
+        <!-- Saved profiles populate here -->
       </div>
 
       <div class="divider"><span>OR ADD NEW PROFILE</span></div>
 
-      <!-- New User Input Area (Updated with Enter-key submit listener) -->
       <div class="new-user-input">
-        <input 
-          type="text" 
-          id="newUsername" 
-          placeholder="Enter student name..." 
-          maxlength="15" 
-          onkeypress="if(event.key==='Enter') registerNewUser()"
-        >
+        <input type="text" id="newUsername" placeholder="Enter student name..." maxlength="15">
         <button class="btn btn-primary" onclick="registerNewUser()">Start Learning</button>
       </div>
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 2. PARENT PDF REPORT MODAL                -->
-  <!-- ========================================== -->
+  <!-- PARENT PDF REPORT MODAL -->
   <div id="reportModal" class="modal-overlay" style="display: none;">
     <div class="modal-card pdf-modal-card">
       <div class="modal-header">
@@ -69,7 +57,7 @@
         <button class="btn btn-primary" onclick="downloadPDFReport()">Download PDF</button>
       </div>
 
-      <!-- Printable Container target for html2pdf -->
+      <!-- PDF PRINTABLE CONTAINER -->
       <div id="pdfPrintContainer">
         <div class="pdf-header">
           <div class="pdf-logo-box">
@@ -89,9 +77,15 @@
         <hr class="pdf-divider">
 
         <div class="pdf-student-info">
-          <div><strong>Student Name:</strong> <span id="pdfStudentName">--</span></div>
-          <div><strong>Current Rank:</strong> <span id="pdfStudentRank">--</span></div>
-          <div><strong>Student Level:</strong> <span id="pdfStudentLevel">--</span></div>
+          <div>
+            <strong>Student Name:</strong> <span id="pdfStudentName">--</span>
+          </div>
+          <div>
+            <strong>Current Rank:</strong> <span id="pdfStudentRank">--</span>
+          </div>
+          <div>
+            <strong>Student Level:</strong> <span id="pdfStudentLevel">--</span>
+          </div>
         </div>
 
         <div class="pdf-section-title">Executive Summary</div>
@@ -125,7 +119,7 @@
             </tr>
           </thead>
           <tbody id="pdfSubjectBreakdown">
-            <!-- Dynamic Subject Rows populated via JS -->
+            <!-- Dynamic rows -->
           </tbody>
         </table>
 
@@ -135,7 +129,7 @@
           <p>• <strong>Mistakes Vault Status:</strong> <span id="pdfMistakesCount">0 unresolved errors</span> recorded.</p>
         </div>
 
-        <!-- Signature & Verification Stamp Block -->
+        <!-- FORMAL SIGNATURES & VERIFICATION -->
         <div class="pdf-signature-section">
           <div class="sig-block">
             <div class="sig-line"></div>
@@ -158,9 +152,7 @@
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 3. NAVIGATION SIDEBAR                      -->
-  <!-- ========================================== -->
+  <!-- LEFT SIDEBAR -->
   <aside class="sidebar">
     <div>
       <div class="brand">
@@ -194,12 +186,10 @@
     </div>
   </aside>
 
-  <!-- ========================================== -->
-  <!-- 4. MAIN CONTENT AREA                       -->
-  <!-- ========================================== -->
+  <!-- MAIN DASHBOARD CONTENT -->
   <main class="content">
     
-    <!-- Top Bar Header -->
+    <!-- TOP HEADER -->
     <header class="top-bar">
       <div class="header-title">
         <h2 class="glowing-title" id="welcomeHeading">Ready to Learn? 🚀</h2>
@@ -207,10 +197,10 @@
       </div>
 
       <div class="stats-container">
-        <!-- Live Clock -->
+        <!-- LIVE DIGITAL CLOCK -->
         <div class="stat-badge clock-badge" id="liveClock">00:00:00 AM</div>
 
-        <!-- Active User Selector Button -->
+        <!-- PROFILE BADGE -->
         <button class="user-badge-btn" onclick="openUserModal()">
           <span>👤 Active:</span>
           <strong id="activeUserName">Guest</strong>
@@ -223,7 +213,7 @@
     <!-- DASHBOARD VIEW -->
     <div id="dashboardView" class="view-section active">
       
-      <!-- Gamification Stats Banner -->
+      <!-- USER GAMIFICATION STATS HEADER -->
       <section class="user-stats-banner">
         <div class="user-stat-card">
           <span class="stat-label">Total Points</span>
@@ -243,7 +233,7 @@
         </div>
       </section>
 
-      <!-- Selection Controls (Subject/Chapter) -->
+      <!-- SELECTION CONTROLS -->
       <section class="controls-card">
         <div class="input-group">
           <label for="subjectSelect">Subject</label>
@@ -262,15 +252,13 @@
         <button class="btn btn-primary" onclick="loadQuestions()">Start Practice</button>
       </section>
 
-      <!-- Quiz Card Area -->
+      <!-- QUIZ CONTAINER -->
       <section class="quiz-card" id="quizContainer">
-        <!-- Loader Box -->
         <div class="loader-box" id="loader">
           <div class="spinner"></div>
           <p id="loaderText">Unlocking secret questions...</p>
         </div>
 
-        <!-- Active Question Content -->
         <div id="quizContent" style="display: none; height: 100%;">
           <div>
             <div class="quiz-header">
@@ -286,7 +274,7 @@
             </div>
 
             <div class="options-grid" id="optionsGrid">
-              <!-- Dynamic Options rendered here -->
+              <!-- Dynamic Options -->
             </div>
           </div>
 
@@ -312,7 +300,7 @@
         <h3>⚠️ Mistakes Vault</h3>
         <p>Review questions you answered incorrectly during practice sessions.</p>
         <div id="mistakesList" class="mistakes-container">
-          <!-- Dynamic Mistakes rendered here -->
+          <!-- Dynamic Mistakes -->
         </div>
       </div>
     </div>
@@ -333,7 +321,7 @@
             </tr>
           </thead>
           <tbody id="leaderboardBody">
-            <!-- Dynamic Standings rendered here -->
+            <!-- Dynamic Standings -->
           </tbody>
         </table>
       </div>
