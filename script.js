@@ -175,22 +175,33 @@ async function init() {
   startLiveClock();
   initUserProfile();
 
+  const loaderText = document.getElementById('loaderText');
+
   try {
-    const loaderText = document.getElementById('loaderText');
     if (loaderText) loaderText.innerText = getRandomLoadText();
 
-    const response = await fetch(`${API_URL}?action=getMenu`);
+    // Added redirect follow mode to handle Google Apps Script 302 redirects properly
+    const response = await fetch(`${API_URL}?action=getMenu`, {
+      method: "GET",
+      redirect: "follow"
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
     menuData = await response.json();
     
     populateSubjects();
     
-    // Automatically load initial batch if user is already set
     if (currentUser) {
       loadQuestions();
     }
   } catch (err) {
-    const loaderText = document.getElementById('loaderText');
-    if (loaderText) loaderText.innerText = "❌ Connection error! Check your API URL.";
+    console.error("API Fetch Error Details:", err);
+    if (loaderText) {
+      loaderText.innerText = "❌ Connection error! Check deployment permissions or API URL.";
+    }
   }
 }
 
@@ -235,7 +246,13 @@ async function loadQuestions() {
   document.getElementById('loaderText').innerText = getRandomLoadText();
 
   try {
-    const res = await fetch(`${API_URL}?action=getQuestions&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`);
+    const res = await fetch(`${API_URL}?action=getQuestions&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`, {
+      method: "GET",
+      redirect: "follow"
+    });
+    
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+
     currentQuestions = await res.json();
     currentIndex = 0;
     
@@ -243,7 +260,8 @@ async function loadQuestions() {
     document.getElementById('quizContent').style.display = 'block';
     renderQuestion();
   } catch (e) {
-    document.getElementById('loaderText').innerText = "⚠️ Failed to fetch questions.";
+    console.error("Question Fetch Error:", e);
+    document.getElementById('loaderText').innerText = "⚠️ Failed to fetch questions. Check network/URL.";
   }
 }
 
