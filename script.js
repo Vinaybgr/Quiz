@@ -1,6 +1,5 @@
-// Replace with your exact deployed Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbz5dl4go_LxzW0wMSXdLhA6wkks1OJMHCNKYqbsY1cMwUT-4AwiQEF4k11MO3v_mj5y/exec"; 
-
+// Replace with your exact deployed Google Apps Script Web App URL
+const API_URL = "https://script.google.com/macros/s/AKfycbwG4IBygCvhwV0I0A4B8bX3224S1I961T93-UfE5qP7k26dG_qX_S0X_g/exec"; 
 
 let menuData = {};
 let currentQuestions = [];
@@ -12,7 +11,7 @@ let questionStartTime = 0;
 let questionTimerInterval = null;
 let currentQuestionDuration = 0;
 
-// Dynamic Kid-Friendly Loading Messages
+// Dynamic Loading Messages
 const funLoadMessages = [
   "🚀 Fueling up the quiz rocket...",
   "🧠 Unlocking secret questions...",
@@ -29,11 +28,12 @@ function getRandomLoadText() {
 function startLiveClock() {
   setInterval(() => {
     const now = new Date();
-    document.getElementById('liveClock').innerText = now.toLocaleTimeString();
+    const clockEl = document.getElementById('liveClock');
+    if (clockEl) clockEl.innerText = now.toLocaleTimeString();
   }, 1000);
 }
 
-// 2. TAB SWITCHER (Issue #1)
+// 2. TAB SWITCHER
 function switchTab(tabName) {
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -80,6 +80,7 @@ function openUserModal() {
       chip.onclick = () => {
         setUser(username);
         closeUserModal();
+        if (Object.keys(menuData).length > 0) loadQuestions();
       };
       userListContainer.appendChild(chip);
     });
@@ -106,21 +107,28 @@ function registerNewUser() {
     localStorage.setItem('c5_quiz_users', JSON.stringify(savedUsers));
   }
 
-  // Initialize fresh profile data structure
   let userData = getUserData(name);
   saveUserData(name, userData);
 
   setUser(name);
   nameInput.value = '';
   closeUserModal();
+  
+  // Instantly trigger question loading for new user
+  if (Object.keys(menuData).length > 0) {
+    loadQuestions();
+  }
 }
 
 function setUser(username) {
   currentUser = username;
   localStorage.setItem('c5_active_user', username);
   
-  document.getElementById('welcomeHeading').innerText = `Ready to Learn, ${username}? 🚀`;
-  document.getElementById('activeUserName').innerText = username;
+  const heading = document.getElementById('welcomeHeading');
+  const nameDisplay = document.getElementById('activeUserName');
+  
+  if (heading) heading.innerText = `Ready to Learn, ${username}? 🚀`;
+  if (nameDisplay) nameDisplay.innerText = username;
   
   updateDashboardStats();
 }
@@ -167,15 +175,21 @@ async function init() {
   initUserProfile();
 
   try {
-    document.getElementById('loaderText').innerText = getRandomLoadText();
+    const loaderText = document.getElementById('loaderText');
+    if (loaderText) loaderText.innerText = getRandomLoadText();
+
     const response = await fetch(`${API_URL}?action=getMenu`);
     menuData = await response.json();
     
     populateSubjects();
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('quizContent').style.display = 'block';
+    
+    // Automatically load initial batch if user is already set
+    if (currentUser) {
+      loadQuestions();
+    }
   } catch (err) {
-    document.getElementById('loaderText').innerText = "❌ Connection error! Check your API URL.";
+    const loaderText = document.getElementById('loaderText');
+    if (loaderText) loaderText.innerText = "❌ Connection error! Check your API URL.";
   }
 }
 
@@ -213,6 +227,8 @@ async function loadQuestions() {
   const subject = document.getElementById('subjectSelect').value;
   const chapter = document.getElementById('chapterSelect').value;
   
+  if (!subject) return;
+
   document.getElementById('quizContent').style.display = 'none';
   document.getElementById('loader').style.display = 'block';
   document.getElementById('loaderText').innerText = getRandomLoadText();
@@ -230,11 +246,14 @@ async function loadQuestions() {
   }
 }
 
-// 5. QUESTION RENDERER & TIMER (Issue #2 & #10)
+// 5. QUESTION RENDERER & TIMER
 function renderQuestion() {
-  if (!currentQuestions.length) return;
+  if (!currentQuestions || !currentQuestions.length) {
+    document.getElementById('questionText').innerText = "No questions found for this selection.";
+    document.getElementById('optionsGrid').innerHTML = '';
+    return;
+  }
   
-  // Reset per-question solve timer
   clearInterval(questionTimerInterval);
   currentQuestionDuration = 0;
   document.getElementById('questionTimer').innerText = '0s';
@@ -251,7 +270,6 @@ function renderQuestion() {
   document.getElementById('questionCounter').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
   document.getElementById('questionText').innerText = `${currentIndex + 1}. ${q.question || q.Question || ''}`;
 
-  // Robustly extract options regardless of backend structure
   let options = [];
   if (Array.isArray(q.options) && q.options.length > 0) {
     options = q.options;
@@ -302,7 +320,7 @@ function handleAnswerSelect(selectedOption, questionObj) {
     data.correct++;
     data.subjectStats[subject].correct++;
     data.streak++;
-    data.xp += 10 + (data.streak > 2 ? 5 : 0); // XP + Streak Bonus
+    data.xp += 10 + (data.streak > 2 ? 5 : 0);
     alert("🎉 Correct! +10 XP");
   } else {
     data.streak = 0;
@@ -333,7 +351,7 @@ function nextQuestion() {
   }
 }
 
-// 6. LEADERBOARD RENDERER (Issue #8 & #9)
+// 6. LEADERBOARD RENDERER
 function renderLeaderboard() {
   const savedUsers = JSON.parse(localStorage.getItem('c5_quiz_users') || '[]');
   const aliases = ["Speedy Scholar", "Brainy Explorer", "Math Wizard", "Logic Master", "Quiz Champ"];
@@ -392,7 +410,7 @@ function renderMistakesVault() {
   });
 }
 
-// 8. PARENT PDF REPORT GENERATOR (Issue #12 & #13)
+// 8. PARENT PDF REPORT GENERATOR
 function openReportModal() {
   if (!currentUser) return alert("Select a profile first!");
   const data = getUserData(currentUser);
@@ -444,117 +462,6 @@ function downloadPDFReport() {
     jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
   };
   html2pdf().set(opt).from(element).save();
-}
-
-window.onload = init;
-let menuData = {};
-let currentQuestions = [];
-let currentIndex = 0;
-
-// Fetch initial menu options on page load
-async function init() {
-  try {
-    const response = await fetch(`${API_URL}?action=getMenu`);
-    menuData = await response.json();
-    
-    document.getElementById('totalQuestionsCount').innerText = menuData.totalQuestions || "1,248";
-    populateSubjects();
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('quizContent').style.display = 'block';
-  } catch (err) {
-    document.getElementById('loader').innerText = "Error loading data. Please check your API URL.";
-  }
-}
-
-function populateSubjects() {
-  const subjectSelect = document.getElementById('subjectSelect');
-  subjectSelect.innerHTML = '';
-  
-  const subjects = Object.keys(menuData.subjects || {});
-  subjects.forEach(sub => {
-    const opt = document.createElement('option');
-    opt.value = sub;
-    opt.innerText = sub;
-    subjectSelect.appendChild(opt);
-  });
-
-  onSubjectChange();
-}
-
-function onSubjectChange() {
-  const subjectSelect = document.getElementById('subjectSelect').value;
-  const chapterSelect = document.getElementById('chapterSelect');
-  chapterSelect.innerHTML = '<option value="ALL">All Chapters</option>';
-
-  if (menuData.subjects && menuData.subjects[subjectSelect]) {
-    menuData.subjects[subjectSelect].forEach(chap => {
-      const opt = document.createElement('option');
-      opt.value = chap;
-      opt.innerText = chap;
-      chapterSelect.appendChild(opt);
-    });
-  }
-}
-
-async function loadQuestions() {
-  const subject = document.getElementById('subjectSelect').value;
-  const chapter = document.getElementById('chapterSelect').value;
-  
-  document.getElementById('quizContent').style.display = 'none';
-  document.getElementById('loader').style.display = 'block';
-  document.getElementById('loader').innerText = "Loading questions...";
-
-  try {
-    const res = await fetch(`${API_URL}?action=getQuestions&subject=${encodeURIComponent(subject)}&chapter=${encodeURIComponent(chapter)}`);
-    currentQuestions = await res.json();
-    currentIndex = 0;
-    
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('quizContent').style.display = 'block';
-    renderQuestion();
-  } catch (e) {
-    document.getElementById('loader').innerText = "Failed to load questions.";
-  }
-}
-
-function renderQuestion() {
-  if (!currentQuestions.length) return;
-  
-  const q = currentQuestions[currentIndex];
-  const subject = document.getElementById('subjectSelect').value;
-  const chapter = document.getElementById('chapterSelect').value;
-
-  document.getElementById('quizBreadcrumb').innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters' : chapter}`;
-  document.getElementById('questionCounter').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
-  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${q.question}`;
-
-  const grid = document.getElementById('optionsGrid');
-  grid.innerHTML = '';
-
-  const prefixes = ['A', 'B', 'C', 'D'];
-  q.options.forEach((opt, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.innerHTML = `<span class="option-prefix">${prefixes[idx]}</span> <span>${opt}</span>`;
-    grid.appendChild(btn);
-  });
-
-  document.getElementById('prevBtn').disabled = currentIndex === 0;
-  document.getElementById('nextBtn').disabled = currentIndex === currentQuestions.length - 1;
-}
-
-function prevQuestion() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    renderQuestion();
-  }
-}
-
-function nextQuestion() {
-  if (currentIndex < currentQuestions.length - 1) {
-    currentIndex++;
-    renderQuestion();
-  }
 }
 
 window.onload = init;
