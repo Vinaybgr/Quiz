@@ -303,18 +303,14 @@ async function loadQuestions() {
 // =========================================================================
 
 function renderQuestion() {
-  if (!currentQuestions || !currentQuestions.length) {
-    const qText = document.getElementById('questionText') || document.getElementById('q-text');
-    if (qText) qText.innerText = "No questions found for this selection.";
-    return;
-  }
+  if (!currentQuestions || !currentQuestions.length) return;
 
-  // 1. Reset & Start Question Timer
+  // Timer setup
   clearInterval(questionTimerInterval);
   currentQuestionDuration = 0;
   const timerEl = document.getElementById('questionTimer') || document.getElementById('timer');
   if (timerEl) timerEl.innerText = '0s';
-  
+
   questionTimerInterval = setInterval(() => {
     currentQuestionDuration++;
     if (timerEl) timerEl.innerText = `${currentQuestionDuration}s`;
@@ -327,9 +323,9 @@ function renderQuestion() {
   const subject = subjectSelect ? subjectSelect.value : '';
   const chapter = chapterSelect ? chapterSelect.value : '';
 
-  // 2. Set Breadcrumb and Question Text
+  // Header Breadcrumbs
   const breadcrumb = document.getElementById('quizBreadcrumb') || document.getElementById('quiz-title');
-  if (breadcrumb) breadcrumb.innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters' : chapter}`;
+  if (breadcrumb) breadcrumb.innerText = `${subject} • ${chapter === 'ALL' ? 'ALL CHAPTERS' : chapter}`;
 
   const counter = document.getElementById('questionCounter') || document.getElementById('progress');
   if (counter) counter.innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
@@ -338,15 +334,12 @@ function renderQuestion() {
   const qText = q.question || q.Question || getObjectValueByNormalizedKey(q, ['question', 'q']) || '';
   if (qTextEl) qTextEl.innerText = `${currentIndex + 1}. ${qText}`;
 
-  // 3. Locate the Options Container (Supports 'options-container' or 'optionsGrid')
+  // Target options container
   const container = document.getElementById('options-container') || document.getElementById('optionsGrid');
-  if (!container) {
-    console.error("HTML Error: Could not find element with id='options-container' or id='optionsGrid'.");
-    return;
-  }
+  if (!container) return;
   container.innerHTML = '';
 
-  // 4. Extract options dictionary
+  // Parse option keys
   const optionsObj = q.options || {
     "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
     "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
@@ -356,7 +349,6 @@ function renderQuestion() {
 
   const correctAnswerKey = String(q.correct || q['Correct Answer'] || getObjectValueByNormalizedKey(q, ['correctanswer', 'correct', 'answer']) || '').trim();
 
-  // 5. Render Buttons into HTML Container
   Object.keys(optionsObj).forEach(key => {
     const optionText = optionsObj[key];
     if (!optionText || String(optionText).trim() === "") return;
@@ -364,74 +356,67 @@ function renderQuestion() {
     const btn = document.createElement('button');
     const shortLabel = key.replace('Option ', '').trim() + ':';
 
-    // Tailored dark-glass button styling matching your UI
-    btn.className = 'w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 text-sm text-slate-200 transition flex items-start space-x-3 style-option-btn';
-    btn.innerHTML = `<span class="font-bold text-blue-400 uppercase text-xs mt-0.5">${shortLabel}</span> <span class="text-slate-100">${optionText}</span>`;
+    // Base dark card styling matching screenshot
+    let baseClass = "w-full text-left justify-start px-5 py-3.5 rounded-xl border bg-slate-900/40 text-slate-100 text-sm transition-all duration-200 flex items-center space-x-3 mb-3";
 
     if (userAnswers[currentIndex]) {
       btn.disabled = true;
-      if (key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey) {
-        btn.className = 'w-full text-left p-4 rounded-xl border border-emerald-500/60 bg-emerald-950/40 text-emerald-200 text-sm font-semibold flex items-start space-x-3 style-option-btn';
-      }
-      if (userAnswers[currentIndex] === key && key.toLowerCase() !== correctAnswerKey.toLowerCase() && optionText !== correctAnswerKey) {
-        btn.className = 'w-full text-left p-4 rounded-xl border border-rose-500/60 bg-rose-950/40 text-rose-200 text-sm font-semibold flex items-start space-x-3 style-option-btn';
+
+      const isCorrectOption = key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey;
+      const isSelectedOption = userAnswers[currentIndex] === key;
+
+      if (isCorrectOption) {
+        // Green outline for correct answer
+        btn.className = `${baseClass} border-emerald-500/90 text-emerald-300 bg-emerald-950/20 font-medium`;
+      } else if (isSelectedOption) {
+        // Red outline for wrong selection
+        btn.className = `${baseClass} border-rose-500/90 text-rose-300 bg-rose-950/20 font-medium`;
+      } else {
+        // Subdued border for unselected options
+        btn.className = `${baseClass} border-slate-800/80 text-slate-400 opacity-60`;
       }
     } else {
+      btn.className = `${baseClass} border-slate-800/80 hover:border-slate-600 hover:bg-slate-800/40`;
       btn.onclick = () => handleAnswerSelect(key, optionText, q);
     }
 
+    btn.innerHTML = `<span class="font-bold text-blue-400 text-xs min-w-[20px] inline-block">${shortLabel}</span> <span class="text-slate-100 text-sm font-normal">${optionText}</span>`;
     container.appendChild(btn);
   });
 
-  // 6. Update Navigation Buttons
+  // Render inline explanation card when question is answered
+  if (userAnswers[currentIndex]) {
+    renderInlineExplanation(q, container);
+  }
+
+  // Navigation button states
   const prevBtn = document.getElementById('prevBtn') || document.getElementById('prev-btn');
   if (prevBtn) prevBtn.disabled = currentIndex === 0;
 
   const nextBtn = document.getElementById('nextBtn') || document.getElementById('next-btn');
-  if (nextBtn) nextBtn.innerText = currentIndex === currentQuestions.length - 1 ? 'Finish' : 'Next Question';
-}
-function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) {
-  clearInterval(questionTimerInterval);
-  
-  userAnswers[currentIndex] = selectedOptionKey;
-  const data = getUserData(currentUser);
-  const subject = document.getElementById('subjectSelect').value;
-  
-  const correctAnswerKey = String(questionObj.correct || questionObj['Correct Answer'] || getObjectValueByNormalizedKey(questionObj, ['correctanswer', 'correct', 'answer']) || '').trim();
-  const correctAnswerText = questionObj.options ? questionObj.options[correctAnswerKey] : (questionObj[correctAnswerKey] || correctAnswerKey);
-  const explanation = questionObj.explanation || questionObj['Explanation'] ? `\n\nExplanation: ${questionObj.explanation || questionObj['Explanation']}` : "";
-
-  data.solved++;
-  data.totalTime += currentQuestionDuration;
-
-  if (!data.subjectStats[subject]) {
-    data.subjectStats[subject] = { time: 0, solved: 0, correct: 0 };
-  }
-  data.subjectStats[subject].solved++;
-  data.subjectStats[subject].time += currentQuestionDuration;
-
-  // Match key or literal option text
-  if (selectedOptionKey.toLowerCase() === correctAnswerKey.toLowerCase() || selectedOptionText === correctAnswerKey) {
-    data.correct++;
-    data.subjectStats[subject].correct++;
-    data.streak++;
-    data.xp += 10 + (data.streak > 2 ? 5 : 0);
-    alert(`🎉 Correct! +10 XP${explanation}`);
-  } else {
-    data.streak = 0;
-    data.mistakes.push({
-      question: questionObj.question || questionObj.Question,
-      yourAnswer: selectedOptionText,
-      correctAnswer: correctAnswerText || correctAnswerKey
-    });
-    alert(`❌ Oops! The right answer was: ${correctAnswerText || correctAnswerKey}${explanation}`);
-  }
-
-  saveUserData(currentUser, data);
-  updateDashboardStats();
-  renderQuestion();
+  if (nextBtn) nextBtn.innerText = currentIndex === currentQuestions.length - 1 ? 'Finish' : 'Next';
 }
 
+// =========================================================================
+// 2. INLINE EXPLANATION HELPER (NEW FUNCTION)
+// Place this directly below renderQuestion()
+// =========================================================================
+function renderInlineExplanation(q, parentContainer) {
+  const explanationText = q.explanation || q['Explanation'] || getObjectValueByNormalizedKey(q, ['explanation', 'exp']) || "No detailed explanation provided for this question.";
+
+  const expCard = document.createElement('div');
+  expCard.id = 'inline-explanation-box';
+  expCard.className = "mt-4 p-4 rounded-xl border border-slate-800/80 bg-slate-900/60 border-l-4 border-l-blue-500 transition-all duration-300";
+  
+  expCard.innerHTML = `
+    <div class="flex items-center space-x-2 mb-1">
+      <span class="text-xs font-bold uppercase tracking-wider text-blue-400">EXPLANATION</span>
+    </div>
+    <p class="text-sm text-slate-200 leading-relaxed font-normal">${explanationText}</p>
+  `;
+
+  parentContainer.appendChild(expCard);
+}
 function prevQuestion() {
   if (currentIndex > 0) {
     currentIndex--;
