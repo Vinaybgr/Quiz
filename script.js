@@ -265,7 +265,11 @@ async function loadQuestions() {
   }
 }
 
+
+// =========================================================================
 // 5. QUESTION RENDERER & TIMER
+// =========================================================================
+
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) {
     document.getElementById('questionText').innerText = "No questions found for this selection.";
@@ -287,45 +291,52 @@ function renderQuestion() {
 
   document.getElementById('quizBreadcrumb').innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters' : chapter}`;
   document.getElementById('questionCounter').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
-  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${q.question || q.Question || ''}`;
+  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${q.Question || q.question || q['Question'] || ''}`;
 
-  let options = [];
-  if (Array.isArray(q.options) && q.options.length > 0) {
-    options = q.options;
-  } else {
-    options = [
-      q.optionA || q.option1 || q.OptionA || q.Option1,
-      q.optionB || q.option2 || q.OptionB || q.Option2,
-      q.optionC || q.option3 || q.OptionC || q.Option3,
-      q.optionD || q.option4 || q.OptionD || q.Option4
-    ];
-  }
-
-  options = options.filter(opt => opt !== undefined && opt !== null && String(opt).trim() !== "");
+  // Map the exact headers from your Google Sheet
+  const optionsData = [
+    { id: "Option A", text: q['Option A'] },
+    { id: "Option B", text: q['Option B'] },
+    { id: "Option C", text: q['Option C'] },
+    { id: "Option D", text: q['Option D'] }
+  ];
 
   const grid = document.getElementById('optionsGrid');
   grid.innerHTML = '';
 
-  const prefixes = ['A', 'B', 'C', 'D', 'E'];
-  options.forEach((opt, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.innerHTML = `<span class="option-prefix">${prefixes[idx] || idx + 1}</span> <span>${opt}</span>`;
-    btn.onclick = () => handleAnswerSelect(opt, q);
-    grid.appendChild(btn);
+  const prefixes = ['A', 'B', 'C', 'D'];
+  optionsData.forEach((opt, idx) => {
+    // Only render options that actually have text
+    if (opt.text && String(opt.text).trim() !== "") {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-prefix">${prefixes[idx]}</span> <span>${opt.text}</span>`;
+      
+      // Pass BOTH the option ID (e.g. "Option C") and text (e.g. "A teaspoon")
+      btn.onclick = () => handleAnswerSelect(opt.id, opt.text, q);
+      grid.appendChild(btn);
+    }
   });
 
   document.getElementById('prevBtn').disabled = currentIndex === 0;
   document.getElementById('nextBtn').disabled = currentIndex === currentQuestions.length - 1;
 }
-
-function handleAnswerSelect(selectedOption, questionObj) {
+// =========================================================================
+// 2. UPDATED ANSWER HANDLER (Supports "Correct Answer" and "Explanation")
+// =========================================================================
+function handleAnswerSelect(selectedOptionId, selectedOptionText, questionObj) {
   clearInterval(questionTimerInterval);
   
   const data = getUserData(currentUser);
   const subject = document.getElementById('subjectSelect').value;
-  const correctAnswer = questionObj.answer || questionObj.Answer || questionObj.correctAnswer;
   
+  // Look for the exact "Correct Answer" column from the sheet
+  const correctAnswerId = String(questionObj['Correct Answer'] || '').trim();
+  
+  // Find the actual text for the correct answer to show in case of a mistake
+  const correctAnswerText = questionObj[correctAnswerId] || correctAnswerId;
+  const explanation = questionObj['Explanation'] ? `\n\nExplanation: ${questionObj['Explanation']}` : "";
+
   data.solved++;
   data.totalTime += currentQuestionDuration;
 
@@ -335,27 +346,29 @@ function handleAnswerSelect(selectedOption, questionObj) {
   data.subjectStats[subject].solved++;
   data.subjectStats[subject].time += currentQuestionDuration;
 
-  if (selectedOption === correctAnswer || !correctAnswer) {
+  // Check if what they clicked matches the "Option C" formatting in the sheet
+  if (selectedOptionId.toLowerCase() === correctAnswerId.toLowerCase()) {
     data.correct++;
     data.subjectStats[subject].correct++;
     data.streak++;
     data.xp += 10 + (data.streak > 2 ? 5 : 0);
-    alert("🎉 Correct! +10 XP");
+    
+    alert(`🎉 Correct! +10 XP${explanation}`);
   } else {
     data.streak = 0;
     data.mistakes.push({
-      question: questionObj.question || questionObj.Question,
-      yourAnswer: selectedOption,
-      correctAnswer: correctAnswer
+      question: questionObj.Question || questionObj.question,
+      yourAnswer: selectedOptionText,
+      correctAnswer: correctAnswerText
     });
-    alert(`❌ Oops! The right answer was: ${correctAnswer}`);
+    
+    alert(`❌ Oops! The right answer was: ${correctAnswerText}${explanation}`);
   }
 
   saveUserData(currentUser, data);
   updateDashboardStats();
   nextQuestion();
 }
-
 function prevQuestion() {
   if (currentIndex > 0) {
     currentIndex--;
