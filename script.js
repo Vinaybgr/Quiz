@@ -2,10 +2,12 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbz5dl4go_LxzW0wMSXdLhA6wkks1OJMHCNKYqbsY1cMwUT-4AwiQEF4k11MO3v_mj5y/exec"; 
 
 
+
 let menuData = {};
 let currentQuestions = [];
 let currentIndex = 0;
 let currentUser = null;
+let userAnswers = {}; // Tracks answers for current session: { questionIndex: selectedOptionKey }
 
 // Telemetry & Timing Variables
 let questionStartTime = 0;
@@ -25,7 +27,63 @@ function getRandomLoadText() {
   return funLoadMessages[Math.floor(Math.random() * funLoadMessages.length)];
 }
 
-// 1. LIVE CLOCK TICKER
+// Helper to normalize JSON key lookups (handles spaces, casing, camelCase)
+function getObjectValueByNormalizedKey(obj, targetKeys) {
+  if (!obj) return null;
+  const normalizedObj = {};
+  Object.keys(obj).forEach(key => {
+    const cleanKey = key.toLowerCase().replace(/[\s_]/g, '');
+    normalizedObj[cleanKey] = obj[key];
+  });
+
+  for (let target of targetKeys) {
+    const cleanTarget = target.toLowerCase().replace(/[\s_]/g, '');
+    if (normalizedObj[cleanTarget] !== undefined && normalizedObj[cleanTarget] !== null) {
+      return normalizedObj[cleanTarget];
+    }
+  }
+  return null;
+}
+
+// =========================================================================
+// 2. APP INITIALIZATION
+// =========================================================================
+
+async function init() {
+  startLiveClock();
+  initUserProfile();
+
+  const loaderText = document.getElementById('loaderText');
+
+  try {
+    if (loaderText) loaderText.innerText = getRandomLoadText();
+
+    // Fetch initial menu with 302 redirect handling
+    const response = await fetch(`${API_URL}?action=getMenu`, {
+      method: "GET",
+      redirect: "follow"
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    menuData = data.subjects ? data.subjects : data;
+    
+    populateSubjects();
+    
+    if (currentUser) {
+      loadQuestions();
+    }
+  } catch (err) {
+    console.error("API Fetch Error Details:", err);
+    if (loaderText) {
+      loaderText.innerText = "❌ Connection error! Check deployment permissions or API URL.";
+    }
+  }
+}
+
 function startLiveClock() {
   setInterval(() => {
     const now = new Date();
@@ -34,7 +92,10 @@ function startLiveClock() {
   }, 1000);
 }
 
-// 2. TAB SWITCHER
+// =========================================================================
+// 3. NAVIGATION & TAB SWITCHING
+// =========================================================================
+
 function switchTab(tabName) {
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -56,7 +117,10 @@ function switchTab(tabName) {
   }
 }
 
-// 3. USER PROFILE MANAGEMENT
+// =========================================================================
+// 4. USER PROFILE MANAGEMENT
+// =========================================================================
+
 function initUserProfile() {
   const activeUser = localStorage.getItem('c5_active_user');
   if (activeUser) {
@@ -115,7 +179,6 @@ function registerNewUser() {
   nameInput.value = '';
   closeUserModal();
   
-  // Instantly trigger question loading for new user
   if (Object.keys(menuData).length > 0) {
     loadQuestions();
   }
@@ -170,46 +233,15 @@ function updateDashboardStats() {
   document.getElementById('dashLevel').innerText = level;
 }
 
-// 4. API INITIALIZATION & FETCHING
-async function init() {
-  startLiveClock();
-  initUserProfile();
-
-  const loaderText = document.getElementById('loaderText');
-
-  try {
-    if (loaderText) loaderText.innerText = getRandomLoadText();
-
-    // Added redirect follow mode to handle Google Apps Script 302 redirects properly
-    const response = await fetch(`${API_URL}?action=getMenu`, {
-      method: "GET",
-      redirect: "follow"
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    menuData = await response.json();
-    
-    populateSubjects();
-    
-    if (currentUser) {
-      loadQuestions();
-    }
-  } catch (err) {
-    console.error("API Fetch Error Details:", err);
-    if (loaderText) {
-      loaderText.innerText = "❌ Connection error! Check deployment permissions or API URL.";
-    }
-  }
-}
+// =========================================================================
+// 5. DROPDOWNS & QUESTION FETCHING
+// =========================================================================
 
 function populateSubjects() {
   const subjectSelect = document.getElementById('subjectSelect');
   subjectSelect.innerHTML = '';
   
-  const subjects = Object.keys(menuData.subjects || {});
+  const subjects = Object.keys(menuData || {});
   subjects.forEach(sub => {
     const opt = document.createElement('option');
     opt.value = sub;
@@ -223,10 +255,10 @@ function populateSubjects() {
 function onSubjectChange() {
   const subjectSelect = document.getElementById('subjectSelect').value;
   const chapterSelect = document.getElementById('chapterSelect');
-  chapterSelect.innerHTML = '<option value="ALL">All Chapters</option>';
+  chapterSelect.innerHTML = '<option value="ALL">All Chapters Combined</option>';
 
-  if (menuData.subjects && menuData.subjects[subjectSelect]) {
-    menuData.subjects[subjectSelect].forEach(chap => {
+  if (menuData && menuData[subjectSelect]) {
+    menuData[subjectSelect].forEach(chap => {
       const opt = document.createElement('option');
       opt.value = chap;
       opt.innerText = chap;
@@ -255,6 +287,7 @@ async function loadQuestions() {
 
     currentQuestions = await res.json();
     currentIndex = 0;
+    userAnswers = {};
     
     document.getElementById('loader').style.display = 'none';
     document.getElementById('quizContent').style.display = 'block';
@@ -265,9 +298,8 @@ async function loadQuestions() {
   }
 }
 
-
 // =========================================================================
-// 5. QUESTION RENDERER & TIMER
+// 6. QUESTION RENDERER & INTERACTION
 // =========================================================================
 
 function renderQuestion() {
@@ -277,6 +309,7 @@ function renderQuestion() {
     return;
   }
   
+  // Reset and start question timer
   clearInterval(questionTimerInterval);
   currentQuestionDuration = 0;
   document.getElementById('questionTimer').innerText = '0s';
@@ -289,53 +322,67 @@ function renderQuestion() {
   const subject = document.getElementById('subjectSelect').value;
   const chapter = document.getElementById('chapterSelect').value;
 
-  document.getElementById('quizBreadcrumb').innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters' : chapter}`;
+  document.getElementById('quizBreadcrumb').innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters Combined' : chapter}`;
   document.getElementById('questionCounter').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
-  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${q.Question || q.question || q['Question'] || ''}`;
+  
+  const qText = q.question || q.Question || getObjectValueByNormalizedKey(q, ['question', 'q']) || '';
+  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${qText}`;
 
-  // Map the exact headers from your Google Sheet
-  const optionsData = [
-    { id: "Option A", text: q['Option A'] },
-    { id: "Option B", text: q['Option B'] },
-    { id: "Option C", text: q['Option C'] },
-    { id: "Option D", text: q['Option D'] }
-  ];
+  // Extract nested options dictionary or fallback key extraction
+  const optionsObj = q.options || {
+    "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
+    "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
+    "Option C": q['Option C'] || getObjectValueByNormalizedKey(q, ['optionc', 'c']),
+    "Option D": q['Option D'] || getObjectValueByNormalizedKey(q, ['optiond', 'd'])
+  };
 
   const grid = document.getElementById('optionsGrid');
   grid.innerHTML = '';
 
-  const prefixes = ['A', 'B', 'C', 'D'];
-  optionsData.forEach((opt, idx) => {
-    // Only render options that actually have text
-    if (opt.text && String(opt.text).trim() !== "") {
-      const btn = document.createElement('button');
-      btn.className = 'option-btn';
-      btn.innerHTML = `<span class="option-prefix">${prefixes[idx]}</span> <span>${opt.text}</span>`;
-      
-      // Pass BOTH the option ID (e.g. "Option C") and text (e.g. "A teaspoon")
-      btn.onclick = () => handleAnswerSelect(opt.id, opt.text, q);
-      grid.appendChild(btn);
+  const correctAnswerKey = String(q.correct || q['Correct Answer'] || getObjectValueByNormalizedKey(q, ['correctanswer', 'correct', 'answer']) || '').trim();
+
+  Object.keys(optionsObj).forEach(key => {
+    const optionText = optionsObj[key];
+    if (!optionText || String(optionText).trim() === "") return;
+
+    const btn = document.createElement('button');
+    const shortLabel = key.replace('Option ', '').trim() + ':';
+    
+    // Default glassmorphism card styling matching Tailwind aesthetics
+    btn.className = 'w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 text-sm text-slate-200 transition flex items-start space-x-3 style-option-btn';
+    btn.innerHTML = `<span class="font-bold text-blue-400 uppercase text-xs mt-0.5">${shortLabel}</span> <span class="text-slate-100">${optionText}</span>`;
+
+    // Handle locked/revealed state if answered
+    if (userAnswers[currentIndex]) {
+      btn.disabled = true;
+      if (key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey) {
+        btn.className = 'w-full text-left p-4 rounded-xl border border-emerald-500/60 bg-emerald-950/40 text-emerald-200 text-sm font-semibold flex items-start space-x-3 style-option-btn';
+      }
+      if (userAnswers[currentIndex] === key && key.toLowerCase() !== correctAnswerKey.toLowerCase() && optionText !== correctAnswerKey) {
+        btn.className = 'w-full text-left p-4 rounded-xl border border-rose-500/60 bg-rose-950/40 text-rose-200 text-sm font-semibold flex items-start space-x-3 style-option-btn';
+      }
+    } else {
+      btn.onclick = () => handleAnswerSelect(key, optionText, q);
     }
+
+    grid.appendChild(btn);
   });
 
   document.getElementById('prevBtn').disabled = currentIndex === 0;
-  document.getElementById('nextBtn').disabled = currentIndex === currentQuestions.length - 1;
+  const nextBtn = document.getElementById('nextBtn');
+  if (nextBtn) nextBtn.innerText = currentIndex === currentQuestions.length - 1 ? 'Finish' : 'Next Question';
 }
-// =========================================================================
-// 2. UPDATED ANSWER HANDLER (Supports "Correct Answer" and "Explanation")
-// =========================================================================
-function handleAnswerSelect(selectedOptionId, selectedOptionText, questionObj) {
+
+function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) {
   clearInterval(questionTimerInterval);
   
+  userAnswers[currentIndex] = selectedOptionKey;
   const data = getUserData(currentUser);
   const subject = document.getElementById('subjectSelect').value;
   
-  // Look for the exact "Correct Answer" column from the sheet
-  const correctAnswerId = String(questionObj['Correct Answer'] || '').trim();
-  
-  // Find the actual text for the correct answer to show in case of a mistake
-  const correctAnswerText = questionObj[correctAnswerId] || correctAnswerId;
-  const explanation = questionObj['Explanation'] ? `\n\nExplanation: ${questionObj['Explanation']}` : "";
+  const correctAnswerKey = String(questionObj.correct || questionObj['Correct Answer'] || getObjectValueByNormalizedKey(questionObj, ['correctanswer', 'correct', 'answer']) || '').trim();
+  const correctAnswerText = questionObj.options ? questionObj.options[correctAnswerKey] : (questionObj[correctAnswerKey] || correctAnswerKey);
+  const explanation = questionObj.explanation || questionObj['Explanation'] ? `\n\nExplanation: ${questionObj.explanation || questionObj['Explanation']}` : "";
 
   data.solved++;
   data.totalTime += currentQuestionDuration;
@@ -346,29 +393,28 @@ function handleAnswerSelect(selectedOptionId, selectedOptionText, questionObj) {
   data.subjectStats[subject].solved++;
   data.subjectStats[subject].time += currentQuestionDuration;
 
-  // Check if what they clicked matches the "Option C" formatting in the sheet
-  if (selectedOptionId.toLowerCase() === correctAnswerId.toLowerCase()) {
+  // Match key or literal option text
+  if (selectedOptionKey.toLowerCase() === correctAnswerKey.toLowerCase() || selectedOptionText === correctAnswerKey) {
     data.correct++;
     data.subjectStats[subject].correct++;
     data.streak++;
     data.xp += 10 + (data.streak > 2 ? 5 : 0);
-    
     alert(`🎉 Correct! +10 XP${explanation}`);
   } else {
     data.streak = 0;
     data.mistakes.push({
-      question: questionObj.Question || questionObj.question,
+      question: questionObj.question || questionObj.Question,
       yourAnswer: selectedOptionText,
-      correctAnswer: correctAnswerText
+      correctAnswer: correctAnswerText || correctAnswerKey
     });
-    
-    alert(`❌ Oops! The right answer was: ${correctAnswerText}${explanation}`);
+    alert(`❌ Oops! The right answer was: ${correctAnswerText || correctAnswerKey}${explanation}`);
   }
 
   saveUserData(currentUser, data);
   updateDashboardStats();
-  nextQuestion();
+  renderQuestion();
 }
+
 function prevQuestion() {
   if (currentIndex > 0) {
     currentIndex--;
@@ -380,10 +426,15 @@ function nextQuestion() {
   if (currentIndex < currentQuestions.length - 1) {
     currentIndex++;
     renderQuestion();
+  } else {
+    alert("🎉 Quiz completed!");
   }
 }
 
-// 6. LEADERBOARD RENDERER
+// =========================================================================
+// 7. LEADERBOARD & MISTAKES LOG
+// =========================================================================
+
 function renderLeaderboard() {
   const savedUsers = JSON.parse(localStorage.getItem('c5_quiz_users') || '[]');
   const aliases = ["Speedy Scholar", "Brainy Explorer", "Math Wizard", "Logic Master", "Quiz Champ"];
@@ -403,6 +454,7 @@ function renderLeaderboard() {
   leaderboardData.sort((a, b) => b.xp - a.xp);
 
   const tbody = document.getElementById('leaderboardBody');
+  if (!tbody) return;
   tbody.innerHTML = '';
 
   leaderboardData.forEach((row, i) => {
@@ -419,10 +471,10 @@ function renderLeaderboard() {
   });
 }
 
-// 7. MISTAKES VAULT RENDERER
 function renderMistakesVault() {
   const data = getUserData(currentUser);
   const container = document.getElementById('mistakesList');
+  if (!container) return;
   container.innerHTML = '';
 
   if (data.mistakes.length === 0) {
@@ -442,7 +494,10 @@ function renderMistakesVault() {
   });
 }
 
+// =========================================================================
 // 8. PARENT PDF REPORT GENERATOR
+// =========================================================================
+
 function openReportModal() {
   if (!currentUser) return alert("Select a profile first!");
   const data = getUserData(currentUser);
