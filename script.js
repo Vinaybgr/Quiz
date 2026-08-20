@@ -305,6 +305,10 @@ async function loadQuestions() {
 // CSS-OVERRIDE QUESTION RENDERER
 // Uses inline styles to guarantee left alignment, dark background, and glowing borders
 // =========================================================================
+// =========================================================================
+// UPDATED QUESTION RENDERER
+// Fixes CSS conflicts, enforces left-alignment, dark theme, & glowing borders
+// =========================================================================
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) return;
 
@@ -342,7 +346,7 @@ function renderQuestion() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Parse options
+  // Parse option keys
   const optionsObj = q.options || {
     "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
     "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
@@ -359,7 +363,7 @@ function renderQuestion() {
     const btn = document.createElement('button');
     const shortLabel = key.replace('Option ', '').trim() + ':';
 
-    // BASE STYLES: Direct inline overrides against CSS interference
+    // BASE INLINE STYLES (Overrides style.css button & style-option-btn rules)
     const baseStyle = `
       display: flex !important;
       align-items: center !important;
@@ -385,10 +389,10 @@ function renderQuestion() {
 
       if (isCorrectOption) {
         // Green Glow Outline for Correct Option
-        btn.style.cssText = `${baseStyle} border: 2px solid #10b981 !important; background-color: rgba(6, 78, 59, 0.3) !important; color: #6ee7b7 !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;`;
+        btn.style.cssText = `${baseStyle} border: 2px solid #10b981 !important; background-color: rgba(6, 78, 59, 0.35) !important; color: #6ee7b7 !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;`;
       } else if (isSelectedOption) {
         // Red Glow Outline for Wrong Selected Option
-        btn.style.cssText = `${baseStyle} border: 2px solid #f43f5e !important; background-color: rgba(136, 19, 55, 0.3) !important; color: #fca5a5 !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;`;
+        btn.style.cssText = `${baseStyle} border: 2px solid #f43f5e !important; background-color: rgba(136, 19, 55, 0.35) !important; color: #fca5a5 !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;`;
       } else {
         // Subdued Unselected Options
         btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.1) !important; opacity: 0.4 !important;`;
@@ -404,7 +408,7 @@ function renderQuestion() {
     container.appendChild(btn);
   });
 
-  // Always show explanation box when an answer is selected
+  // Always display explanation box when question is answered
   if (userAnswers[currentIndex]) {
     renderInlineExplanation(q, container);
   }
@@ -418,8 +422,8 @@ function renderQuestion() {
 }
 
 // =========================================================================
-// MATCHING INLINE EXPLANATION (CSS-OVERRIDE)
-// Creates dark card with blue left accent border right under options
+// INLINE EXPLANATION RENDERER
+// Draws a dark card with a blue left accent border right beneath options
 // =========================================================================
 function renderInlineExplanation(q, parentContainer) {
   const explanationText = q.explanation || q['Explanation'] || getObjectValueByNormalizedKey(q, ['explanation', 'exp']) || "No detailed explanation provided for this question.";
@@ -449,6 +453,10 @@ function renderInlineExplanation(q, parentContainer) {
 
   parentContainer.appendChild(expCard);
 }
+
+// =========================================================================
+//NextQuestion
+// =========================================================================
 function nextQuestion() {
   if (currentIndex < currentQuestions.length - 1) {
     currentIndex++;
