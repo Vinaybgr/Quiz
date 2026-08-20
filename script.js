@@ -301,7 +301,10 @@ async function loadQuestions() {
 // =========================================================================
 // 6. QUESTION RENDERER & INTERACTION
 // =========================================================================
-
+// =========================================================================
+// CSS-OVERRIDE QUESTION RENDERER
+// Uses inline styles to guarantee left alignment, dark background, and glowing borders
+// =========================================================================
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) return;
 
@@ -339,7 +342,7 @@ function renderQuestion() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Parse option keys
+  // Parse options
   const optionsObj = q.options || {
     "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
     "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
@@ -356,8 +359,23 @@ function renderQuestion() {
     const btn = document.createElement('button');
     const shortLabel = key.replace('Option ', '').trim() + ':';
 
-    // Base dark card styling matching screenshot
-    let baseClass = "w-full text-left justify-start px-5 py-3.5 rounded-xl border bg-slate-900/40 text-slate-100 text-sm transition-all duration-200 flex items-center space-x-3 mb-3";
+    // BASE STYLES: Direct inline overrides against CSS interference
+    const baseStyle = `
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      text-align: left !important;
+      width: 100% !important;
+      padding: 14px 20px !important;
+      margin-bottom: 12px !important;
+      border-radius: 12px !important;
+      background-color: rgba(15, 23, 42, 0.6) !important;
+      color: #f8fafc !important;
+      font-size: 15px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      box-sizing: border-box !important;
+    `;
 
     if (userAnswers[currentIndex]) {
       btn.disabled = true;
@@ -366,25 +384,27 @@ function renderQuestion() {
       const isSelectedOption = userAnswers[currentIndex] === key;
 
       if (isCorrectOption) {
-        // Green outline for correct answer
-        btn.className = `${baseClass} border-emerald-500/90 text-emerald-300 bg-emerald-950/20 font-medium`;
+        // Green Glow Outline for Correct Option
+        btn.style.cssText = `${baseStyle} border: 2px solid #10b981 !important; background-color: rgba(6, 78, 59, 0.3) !important; color: #6ee7b7 !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;`;
       } else if (isSelectedOption) {
-        // Red outline for wrong selection
-        btn.className = `${baseClass} border-rose-500/90 text-rose-300 bg-rose-950/20 font-medium`;
+        // Red Glow Outline for Wrong Selected Option
+        btn.style.cssText = `${baseStyle} border: 2px solid #f43f5e !important; background-color: rgba(136, 19, 55, 0.3) !important; color: #fca5a5 !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;`;
       } else {
-        // Subdued border for unselected options
-        btn.className = `${baseClass} border-slate-800/80 text-slate-400 opacity-60`;
+        // Subdued Unselected Options
+        btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.1) !important; opacity: 0.4 !important;`;
       }
     } else {
-      btn.className = `${baseClass} border-slate-800/80 hover:border-slate-600 hover:bg-slate-800/40`;
+      btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.15) !important;`;
+      btn.onmouseenter = () => btn.style.borderColor = "rgba(255, 255, 255, 0.4)";
+      btn.onmouseleave = () => btn.style.borderColor = "rgba(255, 255, 255, 0.15)";
       btn.onclick = () => handleAnswerSelect(key, optionText, q);
     }
 
-    btn.innerHTML = `<span class="font-bold text-blue-400 text-xs min-w-[20px] inline-block">${shortLabel}</span> <span class="text-slate-100 text-sm font-normal">${optionText}</span>`;
+    btn.innerHTML = `<span style="color: #60a5fa; font-weight: 700; font-size: 14px; margin-right: 10px; min-width: 22px; display: inline-block;">${shortLabel}</span> <span style="font-weight: 400;">${optionText}</span>`;
     container.appendChild(btn);
   });
 
-  // Render inline explanation card when question is answered
+  // Always show explanation box when an answer is selected
   if (userAnswers[currentIndex]) {
     renderInlineExplanation(q, container);
   }
@@ -398,32 +418,37 @@ function renderQuestion() {
 }
 
 // =========================================================================
-// 2. INLINE EXPLANATION HELPER (NEW FUNCTION)
-// Place this directly below renderQuestion()
+// MATCHING INLINE EXPLANATION (CSS-OVERRIDE)
+// Creates dark card with blue left accent border right under options
 // =========================================================================
 function renderInlineExplanation(q, parentContainer) {
   const explanationText = q.explanation || q['Explanation'] || getObjectValueByNormalizedKey(q, ['explanation', 'exp']) || "No detailed explanation provided for this question.";
 
   const expCard = document.createElement('div');
   expCard.id = 'inline-explanation-box';
-  expCard.className = "mt-4 p-4 rounded-xl border border-slate-800/80 bg-slate-900/60 border-l-4 border-l-blue-500 transition-all duration-300";
+  expCard.style.cssText = `
+    margin-top: 16px !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    background-color: rgba(15, 23, 42, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-left: 4px solid #3b82f6 !important;
+    text-align: left !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  `;
   
   expCard.innerHTML = `
-    <div class="flex items-center space-x-2 mb-1">
-      <span class="text-xs font-bold uppercase tracking-wider text-blue-400">EXPLANATION</span>
+    <div style="color: #60a5fa; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+      EXPLANATION
     </div>
-    <p class="text-sm text-slate-200 leading-relaxed font-normal">${explanationText}</p>
+    <div style="color: #e2e8f0; font-size: 14px; line-height: 1.6; font-weight: 400;">
+      ${explanationText}
+    </div>
   `;
 
   parentContainer.appendChild(expCard);
 }
-function prevQuestion() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    renderQuestion();
-  }
-}
-
 function nextQuestion() {
   if (currentIndex < currentQuestions.length - 1) {
     currentIndex++;
