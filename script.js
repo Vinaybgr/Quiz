@@ -304,31 +304,49 @@ async function loadQuestions() {
 
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) {
-    document.getElementById('questionText').innerText = "No questions found for this selection.";
-    document.getElementById('optionsGrid').innerHTML = '';
+    const qText = document.getElementById('questionText') || document.getElementById('q-text');
+    if (qText) qText.innerText = "No questions found for this selection.";
     return;
   }
-  
-  // Reset and start question timer
+
+  // 1. Reset & Start Question Timer
   clearInterval(questionTimerInterval);
   currentQuestionDuration = 0;
-  document.getElementById('questionTimer').innerText = '0s';
+  const timerEl = document.getElementById('questionTimer') || document.getElementById('timer');
+  if (timerEl) timerEl.innerText = '0s';
+  
   questionTimerInterval = setInterval(() => {
     currentQuestionDuration++;
-    document.getElementById('questionTimer').innerText = `${currentQuestionDuration}s`;
+    if (timerEl) timerEl.innerText = `${currentQuestionDuration}s`;
   }, 1000);
 
   const q = currentQuestions[currentIndex];
-  const subject = document.getElementById('subjectSelect').value;
-  const chapter = document.getElementById('chapterSelect').value;
+  const subjectSelect = document.getElementById('subjectSelect') || document.getElementById('subject-select');
+  const chapterSelect = document.getElementById('chapterSelect') || document.getElementById('chapter-select');
 
-  document.getElementById('quizBreadcrumb').innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters Combined' : chapter}`;
-  document.getElementById('questionCounter').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
-  
+  const subject = subjectSelect ? subjectSelect.value : '';
+  const chapter = chapterSelect ? chapterSelect.value : '';
+
+  // 2. Set Breadcrumb and Question Text
+  const breadcrumb = document.getElementById('quizBreadcrumb') || document.getElementById('quiz-title');
+  if (breadcrumb) breadcrumb.innerText = `${subject} • ${chapter === 'ALL' ? 'All Chapters' : chapter}`;
+
+  const counter = document.getElementById('questionCounter') || document.getElementById('progress');
+  if (counter) counter.innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
+
+  const qTextEl = document.getElementById('questionText') || document.getElementById('q-text');
   const qText = q.question || q.Question || getObjectValueByNormalizedKey(q, ['question', 'q']) || '';
-  document.getElementById('questionText').innerText = `${currentIndex + 1}. ${qText}`;
+  if (qTextEl) qTextEl.innerText = `${currentIndex + 1}. ${qText}`;
 
-  // Extract nested options dictionary or fallback key extraction
+  // 3. Locate the Options Container (Supports 'options-container' or 'optionsGrid')
+  const container = document.getElementById('options-container') || document.getElementById('optionsGrid');
+  if (!container) {
+    console.error("HTML Error: Could not find element with id='options-container' or id='optionsGrid'.");
+    return;
+  }
+  container.innerHTML = '';
+
+  // 4. Extract options dictionary
   const optionsObj = q.options || {
     "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
     "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
@@ -336,23 +354,20 @@ function renderQuestion() {
     "Option D": q['Option D'] || getObjectValueByNormalizedKey(q, ['optiond', 'd'])
   };
 
-  const grid = document.getElementById('optionsGrid');
-  grid.innerHTML = '';
-
   const correctAnswerKey = String(q.correct || q['Correct Answer'] || getObjectValueByNormalizedKey(q, ['correctanswer', 'correct', 'answer']) || '').trim();
 
+  // 5. Render Buttons into HTML Container
   Object.keys(optionsObj).forEach(key => {
     const optionText = optionsObj[key];
     if (!optionText || String(optionText).trim() === "") return;
 
     const btn = document.createElement('button');
     const shortLabel = key.replace('Option ', '').trim() + ':';
-    
-    // Default glassmorphism card styling matching Tailwind aesthetics
+
+    // Tailored dark-glass button styling matching your UI
     btn.className = 'w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800/60 hover:border-slate-700 text-sm text-slate-200 transition flex items-start space-x-3 style-option-btn';
     btn.innerHTML = `<span class="font-bold text-blue-400 uppercase text-xs mt-0.5">${shortLabel}</span> <span class="text-slate-100">${optionText}</span>`;
 
-    // Handle locked/revealed state if answered
     if (userAnswers[currentIndex]) {
       btn.disabled = true;
       if (key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey) {
@@ -365,14 +380,16 @@ function renderQuestion() {
       btn.onclick = () => handleAnswerSelect(key, optionText, q);
     }
 
-    grid.appendChild(btn);
+    container.appendChild(btn);
   });
 
-  document.getElementById('prevBtn').disabled = currentIndex === 0;
-  const nextBtn = document.getElementById('nextBtn');
+  // 6. Update Navigation Buttons
+  const prevBtn = document.getElementById('prevBtn') || document.getElementById('prev-btn');
+  if (prevBtn) prevBtn.disabled = currentIndex === 0;
+
+  const nextBtn = document.getElementById('nextBtn') || document.getElementById('next-btn');
   if (nextBtn) nextBtn.innerText = currentIndex === currentQuestions.length - 1 ? 'Finish' : 'Next Question';
 }
-
 function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) {
   clearInterval(questionTimerInterval);
   
