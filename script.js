@@ -525,15 +525,37 @@ function renderInlineExplanation(q, parentContainer) {
 // =========================================================================
 //NextQuestion
 // =========================================================================
+// =========================================================================
+// NAVIGATION FUNCTIONS (PUT IN SCRIPT.JS)
+// =========================================================================
+function prevQuestion() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderQuestion();
+  }
+}
+
 function nextQuestion() {
   if (currentIndex < currentQuestions.length - 1) {
     currentIndex++;
     renderQuestion();
   } else {
-    alert("🎉 Quiz completed!");
+    alert("Quiz completed!");
   }
 }
 
+// Attach event listeners explicitly on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+  const prevBtn = document.getElementById('prevBtn') || document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('nextBtn') || document.getElementById('next-btn');
+
+  if (prevBtn) {
+    prevBtn.onclick = prevQuestion;
+  }
+  if (nextBtn) {
+    nextBtn.onclick = nextQuestion;
+  }
+});
 // =========================================================================
 // 7. LEADERBOARD & MISTAKES LOG
 // =========================================================================
