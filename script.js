@@ -299,15 +299,7 @@ async function loadQuestions() {
 }
 
 // =========================================================================
-// 6. QUESTION RENDERER & INTERACTION
-// =========================================================================
-// =========================================================================
-// CSS-OVERRIDE QUESTION RENDERER
-// Uses inline styles to guarantee left alignment, dark background, and glowing borders
-// =========================================================================
-// =========================================================================
-// UPDATED QUESTION RENDERER
-// Fixes CSS conflicts, enforces left-alignment, dark theme, & glowing borders
+// QUESTION RENDERER
 // =========================================================================
 function renderQuestion() {
   if (!currentQuestions || !currentQuestions.length) return;
@@ -330,7 +322,7 @@ function renderQuestion() {
   const subject = subjectSelect ? subjectSelect.value : '';
   const chapter = chapterSelect ? chapterSelect.value : '';
 
-  // Header Breadcrumbs
+  // Breadcrumb and Question text
   const breadcrumb = document.getElementById('quizBreadcrumb') || document.getElementById('quiz-title');
   if (breadcrumb) breadcrumb.innerText = `${subject} • ${chapter === 'ALL' ? 'ALL CHAPTERS' : chapter}`;
 
@@ -341,12 +333,11 @@ function renderQuestion() {
   const qText = q.question || q.Question || getObjectValueByNormalizedKey(q, ['question', 'q']) || '';
   if (qTextEl) qTextEl.innerText = `${currentIndex + 1}. ${qText}`;
 
-  // Target options container
+  // Container
   const container = document.getElementById('options-container') || document.getElementById('optionsGrid');
   if (!container) return;
   container.innerHTML = '';
 
-  // Parse option keys
   const optionsObj = q.options || {
     "Option A": q['Option A'] || getObjectValueByNormalizedKey(q, ['optiona', 'a']),
     "Option B": q['Option B'] || getObjectValueByNormalizedKey(q, ['optionb', 'b']),
@@ -362,8 +353,8 @@ function renderQuestion() {
 
     const btn = document.createElement('button');
     const shortLabel = key.replace('Option ', '').trim() + ':';
+    btn.dataset.key = key;
 
-    // BASE INLINE STYLES (Overrides style.css button & style-option-btn rules)
     const baseStyle = `
       display: flex !important;
       align-items: center !important;
@@ -383,24 +374,20 @@ function renderQuestion() {
 
     if (userAnswers[currentIndex]) {
       btn.disabled = true;
-
       const isCorrectOption = key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey;
       const isSelectedOption = userAnswers[currentIndex] === key;
 
       if (isCorrectOption) {
-        // Green Glow Outline for Correct Option
         btn.style.cssText = `${baseStyle} border: 2px solid #10b981 !important; background-color: rgba(6, 78, 59, 0.35) !important; color: #6ee7b7 !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;`;
       } else if (isSelectedOption) {
-        // Red Glow Outline for Wrong Selected Option
         btn.style.cssText = `${baseStyle} border: 2px solid #f43f5e !important; background-color: rgba(136, 19, 55, 0.35) !important; color: #fca5a5 !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;`;
       } else {
-        // Subdued Unselected Options
         btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.1) !important; opacity: 0.4 !important;`;
       }
     } else {
       btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.15) !important;`;
-      btn.onmouseenter = () => btn.style.borderColor = "rgba(255, 255, 255, 0.4)";
-      btn.onmouseleave = () => btn.style.borderColor = "rgba(255, 255, 255, 0.15)";
+      btn.onmouseenter = () => { if (!btn.disabled) btn.style.borderColor = "rgba(255, 255, 255, 0.4)"; };
+      btn.onmouseleave = () => { if (!btn.disabled) btn.style.borderColor = "rgba(255, 255, 255, 0.15)"; };
       btn.onclick = () => handleAnswerSelect(key, optionText, q);
     }
 
@@ -408,7 +395,7 @@ function renderQuestion() {
     container.appendChild(btn);
   });
 
-  // Always display explanation box when question is answered
+  // Render inline explanation if answered previously
   if (userAnswers[currentIndex]) {
     renderInlineExplanation(q, container);
   }
@@ -422,10 +409,92 @@ function renderQuestion() {
 }
 
 // =========================================================================
-// INLINE EXPLANATION RENDERER
-// Draws a dark card with a blue left accent border right beneath options
+// ANSWER SELECTION HANDLER (INSTANT REAL-TIME DISPLAY)
+// =========================================================================
+function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) {
+  clearInterval(questionTimerInterval);
+
+  userAnswers[currentIndex] = selectedOptionKey;
+  const data = getUserData(currentUser);
+  const subjectSelect = document.getElementById('subjectSelect') || document.getElementById('subject-select');
+  const subject = subjectSelect ? subjectSelect.value : '';
+
+  const correctAnswerKey = String(questionObj.correct || questionObj['Correct Answer'] || getObjectValueByNormalizedKey(questionObj, ['correctanswer', 'correct', 'answer']) || '').trim();
+  const correctAnswerText = questionObj.options ? questionObj.options[correctAnswerKey] : (questionObj[correctAnswerKey] || correctAnswerKey);
+
+  data.solved++;
+  data.totalTime += currentQuestionDuration;
+
+  if (!data.subjectStats[subject]) {
+    data.subjectStats[subject] = { time: 0, solved: 0, correct: 0 };
+  }
+  data.subjectStats[subject].solved++;
+  data.subjectStats[subject].time += currentQuestionDuration;
+
+  const isCorrect = selectedOptionKey.toLowerCase() === correctAnswerKey.toLowerCase() || selectedOptionText === correctAnswerKey;
+
+  if (isCorrect) {
+    data.correct++;
+    data.subjectStats[subject].correct++;
+    data.streak++;
+    data.xp += 10 + (data.streak > 2 ? 5 : 0);
+  } else {
+    data.streak = 0;
+    data.mistakes.push({
+      question: questionObj.question || questionObj.Question,
+      yourAnswer: selectedOptionText,
+      correctAnswer: correctAnswerText || correctAnswerKey
+    });
+  }
+
+  saveUserData(currentUser, data);
+  updateDashboardStats();
+
+  // Apply colors and explanation directly without page reload
+  const container = document.getElementById('options-container') || document.getElementById('optionsGrid');
+  if (container) {
+    const buttons = container.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      const key = btn.dataset.key;
+      const optionText = btn.querySelector('span:last-child') ? btn.querySelector('span:last-child').innerText : '';
+
+      const baseStyle = `
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        width: 100% !important;
+        padding: 14px 20px !important;
+        margin-bottom: 12px !important;
+        border-radius: 12px !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        color: #f8fafc !important;
+        font-size: 15px !important;
+        transition: all 0.2s ease !important;
+        box-sizing: border-box !important;
+      `;
+
+      if (key.toLowerCase() === correctAnswerKey.toLowerCase() || optionText === correctAnswerKey) {
+        btn.style.cssText = `${baseStyle} border: 2px solid #10b981 !important; background-color: rgba(6, 78, 59, 0.35) !important; color: #6ee7b7 !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3) !important;`;
+      } else if (key === selectedOptionKey) {
+        btn.style.cssText = `${baseStyle} border: 2px solid #f43f5e !important; background-color: rgba(136, 19, 55, 0.35) !important; color: #fca5a5 !important; box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;`;
+      } else {
+        btn.style.cssText = `${baseStyle} border: 1px solid rgba(255, 255, 255, 0.1) !important; opacity: 0.4 !important;`;
+      }
+    });
+
+    renderInlineExplanation(questionObj, container);
+  }
+}
+
+// =========================================================================
+// INLINE EXPLANATION CARD
 // =========================================================================
 function renderInlineExplanation(q, parentContainer) {
+  const existingBox = document.getElementById('inline-explanation-box');
+  if (existingBox) existingBox.remove();
+
   const explanationText = q.explanation || q['Explanation'] || getObjectValueByNormalizedKey(q, ['explanation', 'exp']) || "No detailed explanation provided for this question.";
 
   const expCard = document.createElement('div');
@@ -441,7 +510,7 @@ function renderInlineExplanation(q, parentContainer) {
     width: 100% !important;
     box-sizing: border-box !important;
   `;
-  
+
   expCard.innerHTML = `
     <div style="color: #60a5fa; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
       EXPLANATION
@@ -453,7 +522,6 @@ function renderInlineExplanation(q, parentContainer) {
 
   parentContainer.appendChild(expCard);
 }
-
 // =========================================================================
 //NextQuestion
 // =========================================================================
