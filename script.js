@@ -447,10 +447,16 @@ function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) 
     });
   }
 
+  // 1. SAVE LOCAL USER DATA
   saveUserData(currentUser, data);
+
+  // 2. UPDATE LOCAL UI STATS
   updateDashboardStats();
 
-  // Apply colors and explanation directly without page reload
+  // 3. SYNC LIVE SCORE TO GOOGLE SHEET & REFRESH LEADERBOARD
+  syncUserToBackendSheet();
+
+  // Highlight options instantly
   const container = document.getElementById('options-container') || document.getElementById('optionsGrid');
   if (container) {
     const buttons = container.querySelectorAll('button');
@@ -487,7 +493,6 @@ function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) 
     renderInlineExplanation(questionObj, container);
   }
 }
-
 // =========================================================================
 // INLINE EXPLANATION CARD
 // =========================================================================
@@ -544,7 +549,8 @@ function nextQuestion() {
   }
 }
 
-// Attach event listeners explicitly on DOM load
+
+// Attach event listeners and load leaderboard explicitly on DOM load
 document.addEventListener('DOMContentLoaded', () => {
   const prevBtn = document.getElementById('prevBtn') || document.getElementById('prev-btn');
   const nextBtn = document.getElementById('nextBtn') || document.getElementById('next-btn');
@@ -554,6 +560,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (nextBtn) {
     nextBtn.onclick = nextQuestion;
+  }
+
+  // Load backend top 10 leaderboard on initial page load
+  if (typeof loadTop10Leaderboard === 'function') {
+    loadTop10Leaderboard();
   }
 });
 // =========================================================================
@@ -677,3 +688,69 @@ function downloadPDFReport() {
 }
 
 window.onload = init;
+// =========================================================================
+// LEADERBOARD INTEGRATION (Paste at bottom of script.js)
+// =========================================================================
+
+const LEADERBOARD_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5dl4go_LxzW0wMSXdLhA6wkks1OJMHCNKYqbsY1cMwUT-4AwiQEF4k11MO3v_mj5y/exec";
+
+/**
+ * Syncs the currently logged-in user's progress to the Leaderboard sheet tab.
+ */
+function syncUserToBackendSheet() {
+  if (!currentUser) return;
+  const data = getUserData(currentUser);
+  
+  const totalAttempts = data.solved || 0;
+  const accuracyPct = totalAttempts > 0 ? Math.round((data.correct / totalAttempts) * 100) + '%' : '0%';
+
+  const payload = {
+    username: currentUser,
+    xp: data.xp || 0,
+    accuracy: accuracyPct,
+    solved: totalAttempts
+  };
+
+  fetch(LEADERBOARD_SCRIPT_URL, {
+    method: "POST",
+    mode: "cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => loadTop10Leaderboard())
+  .catch(err => console.error("Leaderboard Sync Error:", err));
+}
+
+/**
+ * Fetches and displays the top 10 players from the Leaderboard tab.
+ */
+function loadTop10Leaderboard() {
+  const tbody = document.querySelector('#leaderboardTable tbody') || document.getElementById('leaderboard-body');
+  if (!tbody) return;
+
+  fetch(LEADERBOARD_SCRIPT_URL)
+    .then(res => res.json())
+    .then(top10Users => {
+      tbody.innerHTML = '';
+      
+      top10Users.forEach((user, index) => {
+        const tr = document.createElement('tr');
+        const isSelf = currentUser && user.username.toLowerCase() === currentUser.toLowerCase();
+        
+        tr.style.cssText = `
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          ${isSelf ? 'background-color: rgba(234, 88, 12, 0.2) !important; color: #f97316;' : ''}
+        `;
+
+        tr.innerHTML = `
+          <td style="padding: 12px; font-weight: 700;">#${index + 1}</td>
+          <td style="padding: 12px;">${user.username} ${isSelf ? '(You)' : ''}</td>
+          <td style="padding: 12px; font-weight: 600;">${user.xp} XP</td>
+          <td style="padding: 12px;">${user.accuracy}</td>
+          <td style="padding: 12px;">${user.solved}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => console.error("Leaderboard Fetch Error:", err));
+}
