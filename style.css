@@ -1,7 +1,3 @@
-/* =========================================================================
-   MASTER CSS - FULLY RESPONSIVE & MOBILE READY
-   ========================================================================= */
-
 :root {
   --bg-main: #121214;
   --bg-sidebar: #18181b;
@@ -26,15 +22,12 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-html, body {
+body {
   background-color: var(--bg-main);
   color: var(--text-main);
-  min-height: 100vh;
-  width: 100%;
-}
-
-body {
   display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* --- SIDEBAR --- */
@@ -47,8 +40,6 @@ aside.sidebar {
   justify-content: space-between;
   padding: 24px 16px;
   position: fixed;
-  top: 0;
-  left: 0;
   height: 100vh;
   z-index: 10;
 }
@@ -128,26 +119,26 @@ aside.sidebar {
   box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
 }
 
-/* --- MAIN CONTENT CONTAINER --- */
+/* --- MAIN CONTENT & VIEWS --- */
 main.content {
   margin-left: var(--sidebar-width);
   flex: 1;
-  padding: 24px 32px;
-  min-width: 0;
+  padding: 32px 40px;
+  max-width: calc(100vw - var(--sidebar-width));
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .view-section {
   display: none;
-  width: 100%;
 }
 
 .view-section.active {
   display: block;
 }
 
-/* Header & Titles */
+/* Glowing Neon Header */
 .glowing-title {
   font-size: 28px;
   font-weight: 900;
@@ -168,7 +159,7 @@ header.top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .header-title p {
@@ -200,7 +191,7 @@ header.top-bar {
   font-size: 14px;
 }
 
-/* User Stats Banner */
+/* USER STATS BANNER */
 .user-stats-banner {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -231,7 +222,7 @@ header.top-bar {
   color: var(--text-main);
 }
 
-/* Controls Section */
+/* CONTROLS CARD */
 .controls-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -270,23 +261,25 @@ header.top-bar {
   border-color: var(--accent-primary);
 }
 
-/* Quiz Card Container */
+/* QUIZ CARD CONTAINER */
 .quiz-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  padding: 28px;
+  padding: 32px;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .quiz-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .quiz-header-right {
@@ -323,56 +316,55 @@ header.top-bar {
 }
 
 .question-title {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.4;
   color: var(--text-main);
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
-/* Options Grid */
+/* OPTIONS GRID */
 .options-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
 .option-btn {
   background: var(--bg-sidebar);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  width: 100%;
 }
 
 .option-btn:hover {
   background: var(--bg-card-hover);
   border-color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 .option-prefix {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
 .option-btn:hover .option-prefix {
@@ -380,20 +372,19 @@ header.top-bar {
   color: #fff;
 }
 
-/* Footer Navigation */
+/* FOOTER BUTTONS */
 .quiz-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
+  padding-top: 20px;
   border-top: 1px solid var(--border-color);
-  margin-top: auto;
 }
 
 .btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   border: none;
@@ -424,6 +415,7 @@ header.top-bar {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .btn:disabled {
@@ -431,7 +423,7 @@ header.top-bar {
   cursor: not-allowed;
 }
 
-/* UI Elements & Loaders */
+/* ANIMATED LOADER */
 .loader-box {
   text-align: center;
   padding: 60px 20px;
@@ -466,12 +458,7 @@ header.top-bar {
   font-size: 20px;
 }
 
-/* Tables & Modals */
-.table-container {
-  width: 100%;
-  overflow-x: auto;
-}
-
+/* LEADERBOARD & MISTAKES TABLES */
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
@@ -496,6 +483,7 @@ header.top-bar {
   color: var(--accent-primary);
 }
 
+/* MODALS */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
@@ -518,6 +506,90 @@ header.top-bar {
   text-align: center;
 }
 
+.pdf-modal-card {
+  max-width: 700px;
+  text-align: left;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.user-chip {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user-chip:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-hover);
+}
+
+.divider {
+  margin: 20px 0;
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-sub);
+}
+
+.new-user-input {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.new-user-input input {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+}
+
 .user-badge-btn {
   background: var(--bg-card);
   border: 1px solid var(--accent-primary);
@@ -531,83 +603,187 @@ header.top-bar {
   gap: 6px;
 }
 
+/* PDF PRINTABLE STYLES */
+#pdfPrintContainer {
+  background: #ffffff;
+  color: #111111;
+  padding: 30px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pdf-logo-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdf-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.pdf-logo-fallback {
+  width: 40px;
+  height: 40px;
+  background: #f97316;
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.pdf-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111;
+}
+
+.pdf-subtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+.pdf-emblem-box {
+  text-align: right;
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pdf-divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 2px solid #f97316;
+}
+
+.pdf-student-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.pdf-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #f97316;
+  margin: 16px 0 8px 0;
+}
+
+.pdf-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.pdf-stat-card {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.pdf-stat-card .label {
+  display: block;
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.pdf-stat-card .val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111;
+}
+
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.pdf-table th, .pdf-table td {
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  text-align: left;
+}
+
+.pdf-table th {
+  background: #f8f9fa;
+}
+
+.pdf-telemetry-box {
+  font-size: 12px;
+  background: #fdf8f6;
+  border: 1px solid #fce8e0;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.pdf-signature-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed #ccc;
+}
+
+.sig-block {
+  text-align: center;
+  width: 200px;
+  font-size: 11px;
+}
+
+.sig-line {
+  border-bottom: 1px solid #333;
+  margin-bottom: 6px;
+}
+
+.pdf-stamp-badge {
+  border: 2px double #f97316;
+  color: #f97316;
+  font-weight: 900;
+  font-size: 10px;
+  padding: 8px 12px;
+  border-radius: 50%;
+  text-align: center;
+  transform: rotate(-10deg);
+}
+
+/* APP FOOTER */
 .app-footer {
-  margin-top: auto;
+  margin-top: 40px;
   text-align: center;
   font-size: 12px;
   color: var(--text-sub);
-  padding: 20px 0 10px 0;
+  padding: 16px 0;
   border-top: 1px solid var(--border-color);
 }
 
-/* =========================================================================
-   MOBILE & TABLET RESPONSIVE FIXES (≤ 900px)
-   ========================================================================= */
-@media screen and (max-width: 900px) {
-  html, body {
-    overflow-x: hidden;
-    overflow-y: auto !important; /* Smooth scrolling enabled on mobile */
-    height: auto !important;
-  }
-
-  aside.sidebar {
-    display: none; /* Hide desktop sidebar */
-  }
-
-  main.content {
-    margin-left: 0 !important;
-    max-width: 100vw !important;
-    padding: 16px !important;
-    min-height: 100vh;
-  }
-
-  header.top-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .controls-card {
-    grid-template-columns: 1fr !important;
-    padding: 16px;
-    gap: 14px;
-  }
-
-  .user-stats-banner {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px;
-  }
-
-  .quiz-card {
-    padding: 16px !important;
-  }
-
-  .question-title {
-    font-size: 15px !important;
-  }
-
-  .option-btn {
-    padding: 12px 14px !important;
-    font-size: 13px !important;
-  }
-
-  .quiz-footer {
-    padding-top: 16px;
-    padding-bottom: 24px; /* Extra bottom padding for mobile browsers */
-  }
-
-  .btn {
-    padding: 10px 16px;
-    font-size: 12px;
-  }
-}
-
-/* Subtle scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+/* RESPONSIVE DESIGN (<900px) */
+@media (max-width: 900px) {
+  aside.sidebar { display: none; }
+  main.content { margin-left: 0; max-width: 100vw; padding: 20px; }
+  .controls-card { grid-template-columns: 1fr; }
+  .user-stats-banner { grid-template-columns: repeat(2, 1fr); }
+  header.top-bar { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .pdf-stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
