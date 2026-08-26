@@ -230,7 +230,7 @@ header.top-bar {
   padding: 20px 24px;
   margin-bottom: 24px;
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr auto; /* Updated from 1fr 1fr auto */
   gap: 20px;
   align-items: end;
 }
