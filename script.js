@@ -754,3 +754,43 @@ function loadTop10Leaderboard() {
     })
     .catch(err => console.error("Leaderboard Fetch Error:", err));
 }
+// Fisher-Yates Shuffler Algorithm
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Session Generator with Conditional Shuffling
+function prepareQuizSession(allQuestions) {
+  const selectedChapter = document.getElementById("chapterSelect").value;
+  const isShuffleEnabled = document.getElementById("shuffleToggle").checked;
+
+  // Step 1: Filter by chapter selection
+  let questionsPool = (selectedChapter === "all")
+    ? [...allQuestions]
+    : allQuestions.filter(q => q.chapter === selectedChapter);
+
+  // Step 2: Conditionally shuffle question order
+  if (isShuffleEnabled) {
+    questionsPool = shuffleArray(questionsPool);
+  }
+
+  return questionsPool;
+}
+
+// Triggered when starting or restarting a session
+function handleStartQuiz() {
+  const activeQuestions = prepareQuizSession(rawQuestionBank);
+  
+  if (activeQuestions.length === 0) {
+    alert("No questions available for this selection!");
+    return;
+  }
+  
+  // Render initial question (Index 0)
+  loadQuestion(activeQuestions, 0);
+}
