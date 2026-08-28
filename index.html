@@ -347,7 +347,32 @@
         </table>
       </div>
     </div>
-
+    <!-- Dynamic Celebration End Modal -->
+    <div class="modal-overlay" id="completionModal" style="display: none;">
+      <div class="modal-card completion-card">
+        <div class="confetti-badge" id="modalEmoji">🎉</div>
+        <h2 class="completion-title" id="modalTitle">Quiz Completed!</h2>
+        <p class="completion-subtitle" id="modalSubtitle">Great job finishing this set!</p>
+    
+        <!-- Score Summary -->
+        <div class="completion-stats">
+          <div class="mini-stat">
+            <span class="stat-lbl">Final Score</span>
+            <span class="stat-val" id="finalScoreVal">0 / 0</span>
+          </div>
+          <div class="mini-stat">
+            <span class="stat-lbl">Accuracy</span>
+            <span class="stat-val highlight" id="accuracyVal">0%</span>
+          </div>
+        </div>
+    
+        <!-- Dynamic Buttons -->
+        <div class="completion-actions">
+          <button class="btn btn-primary glow-btn" id="primaryBtn" onclick="restartCurrentQuiz()">Play Again 🔄</button>
+          <button class="btn btn-secondary" id="secondaryBtn" onclick="closeCompletionModal()">Choose Another Subject 🚀</button>
+        </div>
+      </div>
+    </div>
     <!-- FOOTER SIGNATURE -->
     <footer class="app-footer">
       Made with ❤️ by Vinay Ray
