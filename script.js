@@ -8,6 +8,7 @@ let currentQuestions = [];
 let currentIndex = 0;
 let currentUser = null;
 let userAnswers = {}; // Tracks answers for current session: { questionIndex: selectedOptionKey }
+let sessionCorrect = 0; // <--- ADD THIS to track correct answers in the current session
 
 // Telemetry & Timing Variables
 let questionStartTime = 0;
@@ -288,6 +289,7 @@ async function loadQuestions() {
     currentQuestions = await res.json();
     currentIndex = 0;
     userAnswers = {};
+    sessionCorrect = 0; // <--- ADD THIS HERE to reset session score
     
     document.getElementById('loader').style.display = 'none';
     document.getElementById('quizContent').style.display = 'block';
@@ -434,6 +436,7 @@ function handleAnswerSelect(selectedOptionKey, selectedOptionText, questionObj) 
   const isCorrect = selectedOptionKey.toLowerCase() === correctAnswerKey.toLowerCase() || selectedOptionText === correctAnswerKey;
 
   if (isCorrect) {
+    sessionCorrect++; // <--- ADD THIS HERE to Increment sessionCorrect on Correct Answer
     data.correct++;
     data.subjectStats[subject].correct++;
     data.streak++;
@@ -569,7 +572,8 @@ const completionThemes = [
   }
 ];
 // Call this function when the user finishes the quiz
-function showCompletionModal() {
+// Updated Modal Function
+function showCompletionModal(score, total) {
   const modal = document.getElementById("completionModal");
   
   // Pick random celebration theme
@@ -582,6 +586,11 @@ function showCompletionModal() {
   document.getElementById("modalSubtitle").textContent = theme.subtitle;
   document.getElementById("primaryBtn").textContent = theme.primaryBtn;
   document.getElementById("secondaryBtn").textContent = theme.secondaryBtn;
+
+  // Calculate & Inject Stats
+  document.getElementById("finalScoreVal").textContent = `${score} / ${total}`;
+  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  document.getElementById("accuracyVal").textContent = `${percentage}%`;
 
   // Display modal
   modal.style.display = "flex";
@@ -611,7 +620,7 @@ function nextQuestion() {
     renderQuestion();
   } else {
     // Just trigger the modal without passing any score!
-    showCompletionModal();
+    showCompletionModal(sessionCorrect, currentQuestions.length);
   }
 }
 
