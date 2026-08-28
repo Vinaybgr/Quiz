@@ -530,6 +530,71 @@ function renderInlineExplanation(q, parentContainer) {
 // =========================================================================
 //NextQuestion
 // =========================================================================
+// Array of 5 unique, high-energy completion sets
+const completionThemes = [
+  {
+    emoji: "🎉",
+    title: "Outstanding Work, Champion!",
+    subtitle: "You totally smashed this session! Ready to keep the winning streak alive or try a fresh challenge?",
+    primaryBtn: "Keep the Momentum 🔄",
+    secondaryBtn: "Explore New Subjects 🚀"
+  },
+  {
+    emoji: "⚡",
+    title: "Lightning Fast Mastery!",
+    subtitle: "Your brain is officially on fire! Run it back for a higher score or pivot to a new topic.",
+    primaryBtn: "Rematch This Set ⚡",
+    secondaryBtn: "Switch Target Chapter 🎯"
+  },
+  {
+    emoji: "🏆",
+    title: "Victory Unlocked!",
+    subtitle: "Another module conquered! Practice makes permanent—ready for another round?",
+    primaryBtn: "Play Again for Glory 🏆",
+    secondaryBtn: "Pick Next Quest 🗺️"
+  },
+  {
+    emoji: "🚀",
+    title: "Level Up Complete!",
+    subtitle: "Knowledge boosted! You're making serious gains today. What's the next destination?",
+    primaryBtn: "Shuffle & Replay 🎲",
+    secondaryBtn: "Select Different Topic 📚"
+  },
+  {
+    emoji: "🔥",
+    title: "Absolute Brainpower!",
+    subtitle: "That was incredible focus! Double down on this set or conquer something completely new.",
+    primaryBtn: "One More Round! 🔥",
+    secondaryBtn: "Back to Dashboard 🏠"
+  }
+];
+// Call this function when the user finishes the quiz
+function showCompletionModal() {
+  const modal = document.getElementById("completionModal");
+  
+  // Pick random celebration theme
+  const randomIndex = Math.floor(Math.random() * completionThemes.length);
+  const theme = completionThemes[randomIndex];
+
+  // Inject content
+  document.getElementById("modalEmoji").textContent = theme.emoji;
+  document.getElementById("modalTitle").textContent = theme.title;
+  document.getElementById("modalSubtitle").textContent = theme.subtitle;
+  document.getElementById("primaryBtn").textContent = theme.primaryBtn;
+  document.getElementById("secondaryBtn").textContent = theme.secondaryBtn;
+
+  // Display modal
+  modal.style.display = "flex";
+}
+
+function closeCompletionModal() {
+  document.getElementById("completionModal").style.display = "none";
+}
+
+function restartCurrentQuiz() {
+  closeCompletionModal();
+  loadQuestions(); // Re-runs your questions loader with active filters/shuffle settings
+}
 // =========================================================================
 // NAVIGATION FUNCTIONS (PUT IN SCRIPT.JS)
 // =========================================================================
@@ -545,7 +610,8 @@ function nextQuestion() {
     currentIndex++;
     renderQuestion();
   } else {
-    alert("Quiz completed!");
+    // Just trigger the modal without passing any score!
+    showCompletionModal();
   }
 }
 
